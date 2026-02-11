@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI献立プランナー（完全無料版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .ai-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 50%, #fbbc04 75%, #ea4335 100%);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .free-badge {
+            display: inline-block;
+            background: #48bb78;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        select, input[type="number"], input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .toggle-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        
+        .toggle-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #48bb78;
+            background: white;
+            color: #48bb78;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        .mode-btn.active {
+            background: #48bb78;
+            color: white;
+        }
+
+        .mode-btn.exclude {
+            border-color: #f56565;
+            color: #f56565;
+        }
+
+        .mode-btn.exclude.active {
+            background: #f56565;
+            color: white;
+        }
+        
+        .ingredient-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .ingredient-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .ingredient-input input {
+            flex: 1;
+        }
+        
+        .btn-add {
+            padding: 10px 20px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .ingredient-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .tag {
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .tag.include-mode {
+            background: #48bb78;
+        }
+        
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .ai-settings {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4285f4;
+        }
+
+        .api-key-input {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .api-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .api-status.connected {
+            background: #48bb78;
+            color: white;
+        }
+
+        .api-status.disconnected {
+            background: #f56565;
+            color: white;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-ai {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+        }
+
+        .btn-ai:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(66, 133, 244, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .calendar-section, .shopping-list-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .day-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .day-card.ai-generated {
+            border-left-color: #4285f4;
+            background: linear-gradient(to right, #e3f2fd 0%, #f8f9fa 100%);
+        }
+        
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .day-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+        
+        .day-total-calories {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .meal {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .meal-type {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        .meal-name {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .meal-info {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+            flex-wrap: wrap;
+        }
+        
+        .calorie-badge {
+            background: #ffd93d;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .difficulty-badge {
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .difficulty-easy {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .difficulty-gourmet {
+            background: #ed8936;
+            color: white;
+        }
+
+        .ai-badge-small {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+        }
+        
+        .shopping-list {
+            list-style: none;
+        }
+        
+        .shopping-list li {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .shopping-list input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .shopping-list li.checked {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        
+        .btn-clear {
+            background: #f56565;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-clear:hover {
+            background: #e53e3e;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .ingredients-list {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            padding-left: 10px;
+        }
+
+        .setup-link {
+            color: #4285f4;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .setup-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🤖 AI献立プランナー</h1>
+            <p>AIがあなたのための献立を考えます</p>
+            <div class="ai-badge">
+                ✨ Powered by Google Gemini
+                <span class="free-badge">完全無料</span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="ai-settings">
+                <label>
+                    🔑 Google Gemini APIキー 
+                    <span class="api-status" id="api-status">未設定</span>
+                </label>
+                <div class="api-key-input">
+                    <div class="control-group">
+                        <input type="password" id="api-key" placeholder="AIza...">
+                    </div>
+                    <button class="btn-secondary" onclick="saveApiKey()">保存</button>
+                </div>
+                <small style="color: #666;">
+                    ⚠️ APIキーは <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setup-link">Google AI Studio</a> で無料取得できます（クレカ不要！）
+                </small>
+            </div>
+
+            <div class="info-box">
+                💡 <strong>完全無料！</strong> Gemini APIは月1500リクエストまで無料。献立アプリなら十分すぎる枠です。
+            </div>
+
+            <div class="control-row">
+                <div class="control-group">
+                    <label>🍚 料理ジャンル</label>
+                    <select id="category">
+                        <option value="all">おまかせ</option>
+                        <option value="和食">和食</option>
+                        <option value="洋食">洋食</option>
+                        <option value="中華">中華</option>
+                        <option value="エスニック">エスニック</option>
+                        <option value="韓国料理">韓国料理</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>👨‍👩‍👧 人数</label>
+                    <input type="number" id="servings" min="1" max="10" value="2">
+                </div>
+                
+                <div class="control-group">
+                    <label>⚡ 調理スタイル</label>
+                    <div class="toggle-buttons">
+                        <button class="toggle-btn active" onclick="setDifficulty('簡単')">簡単に</button>
+                        <button class="toggle-btn" onclick="setDifficulty('こだわり')">こだわって</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ingredient-section">
+                <label>🥬 食材設定</label>
+                <div class="mode-toggle">
+                    <button class="mode-btn exclude active" onclick="setIngredientMode('exclude')">
+                        🚫 これは使わない（除外モード）
+                    </button>
+                    <button class="mode-btn" onclick="setIngredientMode('include')">
+                        ✅ これだけ使う（限定モード）
+                    </button>
+                </div>
+                <div class="ingredient-input">
+                    <input type="text" id="ingredient-input" placeholder="例: えび、ナッツ、セロリ">
+                    <button class="btn-add" onclick="addIngredient()">追加</button>
+                </div>
+                <div class="ingredient-tags" id="ingredient-tags"></div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn-ai" onclick="generateAIWeekMenu()" id="ai-week-btn">
+                    🤖 AIで1週間分
+                </button>
+                <button class="btn-ai" onclick="generateAIDayMenu()" id="ai-day-btn">
+                    🤖 AIで1日分
+                </button>
+                <button class="btn-secondary" onclick="generateShoppingList()">🛒 買い物リスト</button>
+                <button class="btn-clear" onclick="clearAll()">🗑️ すべてクリア</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="calendar-section">
+                <h2>📅 週間献立カレンダー</h2>
+                <div id="calendar"></div>
+            </div>
+            
+            <div class="shopping-list-section">
+                <h2>🛒 買い物リスト</h2>
+                <div id="shopping-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDifficulty = '簡単';
+        let weekMenu = [];
+        let ingredients = [];
+        let ingredientMode = 'exclude';
+        let apiKey = '';
+
+        function saveApiKey() {
+            const key = document.getElementById('api-key').value.trim();
+            if (!key) {
+                alert('APIキーを入力してください');
+                return;
+            }
+            if (!key.startsWith('AIza')) {
+                alert('⚠️ Gemini APIキーは "AIza" で始まります。正しいキーを入力してください。');
+                return;
+            }
+            apiKey = key;
+            localStorage.setItem('gemini_api_key', key);
+            updateApiStatus();
+            alert('✅ APIキーを保存しました！');
+        }
+
+        function loadApiKey() {
+            const saved = localStorage.getItem('gemini_api_key');
+            if (saved) {
+                apiKey = saved;
+                document.getElementById('api-key').value = saved;
+                updateApiStatus();
+            }
+        }
+
+        function updateApiStatus() {
+            const status = document.getElementById('api-status');
+            const aiButtons = document.querySelectorAll('.btn-ai');
+            
+            if (apiKey) {
+                status.textContent = '接続済み';
+                status.className = 'api-status connected';
+                aiButtons.forEach(btn => btn.disabled = false);
+            } else {
+                status.textContent = '未設定';
+                status.className = 'api-status disconnected';
+                aiButtons.forEach(btn => btn.disabled = true);
+            }
+        }
+
+        function setIngredientMode(mode) {
+            ingredientMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderIngredientTags();
+            saveIngredientsToLocalStorage();
+        }
+
+        function setDifficulty(difficulty) {
+            currentDifficulty = difficulty;
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function addIngredient() {
+            const input = document.getElementById('ingredient-input');
+            const value = input.value.trim();
+            
+            if (value && !ingredients.includes(value)) {
+                ingredients.push(value);
+                input.value = '';
+                renderIngredientTags();
+                saveIngredientsToLocalStorage();
+            }
+        }
+
+        function removeIngredient(ingredient) {
+            ingredients = ingredients.filter(item => item !== ingredient);
+            renderIngredientTags();
+            saveIngredientsToLocalStorage();
+        }
+
+        function renderIngredientTags() {
+            const container = document.getElementById('ingredient-tags');
+            const tagClass = ingredientMode === 'include' ? 'tag include-mode' : 'tag';
+            container.innerHTML = ingredients.map(ingredient => `
+                <div class="${tagClass}">
+                    <span>${ingredient}</span>
+                    <span class="tag-remove" onclick="removeIngredient('${ingredient}')">×</span>
+                </div>
+            `).join('');
+        }
+
+        // Google Gemini API呼び出し（リトライ＆代替モデル対応版）
+        async function callGemini(prompt, retryCount = 0) {
+            if (!apiKey) {
+                alert('⚠️ 先にAPIキーを設定してください！');
+                return null;
+            }
+
+            const MAX_RETRIES = 3;
+            const RETRY_DELAY = 2000; // 2秒待機
+            
+            // 混雑時は代替モデルも試す
+            const models = ['gemini-flash-latest', 'gemini-pro'];
+            const modelToUse = retryCount < 2 ? models[0] : models[1];
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${apiKey}`;
+                
+                console.log(`🔄 試行 ${retryCount + 1}/${MAX_RETRIES + 1} - モデル: ${modelToUse}`);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    console.error('API Error:', data);
+                    
+                    // 混雑エラーの場合はリトライ
+                    if (data.error?.message?.includes('high demand') || 
+                        data.error?.message?.includes('quota') ||
+                        data.error?.message?.includes('rate limit')) {
+                        
+                        if (retryCount < MAX_RETRIES) {
+                            console.log(`⏳ ${RETRY_DELAY/1000}秒後に再試行します...`);
+                            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                            return callGemini(prompt, retryCount + 1);
+                        } else {
+                            throw new Error('サーバーが混雑しています。しばらく時間をおいてから再度お試しください。');
+                        }
+                    }
+                    
+                    throw new Error(data.error?.message || 'API呼び出しに失敗しました');
+                }
+
+                console.log('✅ API Success:', data);
+                
+                if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error('予期しないレスポンス形式です');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                
+                // ネットワークエラーの場合もリトライ
+                if (error.name === 'TypeError' && retryCount < MAX_RETRIES) {
+                    console.log(`⏳ ネットワークエラー。${RETRY_DELAY/1000}秒後に再試行...`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                    return callGemini(prompt, retryCount + 1);
+                }
+                
+                alert('❌ エラー: ' + error.message);
+                return null;
+            }
+        }
+
+        function generatePrompt(dayCount) {
+            const category = document.getElementById('category').value;
+            const servings = document.getElementById('servings').value;
+            
+            let ingredientConstraint = '';
+            if (ingredients.length > 0) {
+                if (ingredientMode === 'exclude') {
+                    ingredientConstraint = `\n必須制約：以下の食材は絶対に使わないでください: ${ingredients.join('、')}`;
+                } else {
+                    ingredientConstraint = `\n必須制約：以下の食材のみを使って献立を考えてください: ${ingredients.join('、')}`;
+                }
+            }
+
+            const categoryText = category === 'all' ? 'ジャンルは自由' : `${category}中心`;
+            const difficultyText = currentDifficulty === '簡単' ? '調理時間30分以内の簡単な料理' : '本格的な料理';
+
+            return `${dayCount}日分の夕食献立を考えてください。
+
+条件：
+- ${categoryText}
+- ${difficultyText}
+- ${servings}人分
+${ingredientConstraint}
+
+以下のJSON形式で返してください（マークダウンのコードブロックは使わず、純粋なJSONのみ）：
+
+{
+  "menus": [
+    {
+      "day": "月曜日",
+      "main": {
+        "name": "料理名",
+        "calories": 数値,
+        "ingredients": ["材料1", "材料2"]
+      },
+      "side": {
+        "name": "料理名",
+        "calories": 数値,
+        "ingredients": ["材料1", "材料2"]
+      },
+      "soup": {
+        "name": "料理名",
+        "calories": 数値,
+        "ingredients": ["材料1", "材料2"]
+      }
+    }
+  ]
+}`;
+        }
+
+        async function generateAIDayMenu() {
+            const btn = document.getElementById('ai-day-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> AI思考中... (混雑時は時間がかかります)';
+            btn.disabled = true;
+
+            const prompt = generatePrompt(1);
+            const response = await callGemini(prompt);
+            
+            if (response) {
+                try {
+                    let jsonText = response;
+                    const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) || response.match(/```\n([\s\S]*?)\n```/);
+                    if (jsonMatch) {
+                        jsonText = jsonMatch[1];
+                    }
+                    
+                    const data = JSON.parse(jsonText);
+                    
+                    if (data.menus && data.menus.length > 0) {
+                        const dayNames = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日'];
+                        const usedDays = weekMenu.map(m => m.day);
+                        const availableDays = dayNames.filter(d => !usedDays.includes(d));
+                        
+                        if (availableDays.length === 0) {
+                            alert('すでに7日分の献立があります！');
+                            btn.innerHTML = originalText;
+                            btn.disabled = false;
+                            return;
+                        }
+                        
+                        const menu = data.menus[0];
+                        menu.day = availableDays[0];
+                        menu.servings = parseInt(document.getElementById('servings').value);
+                        menu.difficulty = currentDifficulty;
+                        menu.category = document.getElementById('category').value;
+                        menu.totalCalories = Math.round(
+                            (menu.main.calories + menu.side.calories + menu.soup.calories) * menu.servings
+                        );
+                        menu.aiGenerated = true;
+                        
+                        weekMenu.push(menu);
+                        saveToLocalStorage();
+                        renderCalendar();
+                        
+                        alert('✅ 献立を作成しました！');
+                    }
+                } catch (error) {
+                    console.error('Parse error:', error);
+                    alert('❌ AIの応答を解析できませんでした。もう一度お試しください。');
+                }
+            }
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+
+        async function generateAIWeekMenu() {
+            const btn = document.getElementById('ai-week-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> AI思考中... (混雑時は時間がかかります)';
+            btn.disabled = true;
+
+            const prompt = generatePrompt(7);
+            const response = await callGemini(prompt);
+            
+            if (response) {
+                try {
+                    let jsonText = response;
+                    const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) || response.match(/```\n([\s\S]*?)\n```/);
+                    if (jsonMatch) {
+                        jsonText = jsonMatch[1];
+                    }
+                    
+                    const data = JSON.parse(jsonText);
+                    
+                    if (data.menus && data.menus.length > 0) {
+                        const servings = parseInt(document.getElementById('servings').value);
+                        const category = document.getElementById('category').value;
+                        
+                        weekMenu = data.menus.map(menu => ({
+                            ...menu,
+                            servings: servings,
+                            difficulty: currentDifficulty,
+                            category: category,
+                            totalCalories: Math.round(
+                                (menu.main.calories + menu.side.calories + menu.soup.calories) * servings
+                            ),
+                            aiGenerated: true
+                        }));
+                        
+                        saveToLocalStorage();
+                        renderCalendar();
+                        
+                        alert('✅ 1週間分の献立を作成しました！');
+                    }
+                } catch (error) {
+                    console.error('Parse error:', error);
+                    alert('❌ AIの応答を解析できませんでした。もう一度お試しください。');
+                }
+            }
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            
+            if (weekMenu.length === 0) {
+                calendar.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <p>まだ献立がありません</p>
+                        <p>「AIで1週間分」または「AIで1日分」ボタンで献立を作りましょう！</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            calendar.innerHTML = weekMenu.map(day => `
+                <div class="day-card ${day.aiGenerated ? 'ai-generated' : ''}">
+                    <div class="day-header">
+                        <span class="day-name">
+                            ${day.day}
+                            ${day.aiGenerated ? '<span class="ai-badge-small">AI</span>' : ''}
+                        </span>
+                        <span class="day-total-calories">${day.totalCalories} kcal (${day.servings}人分)</span>
+                    </div>
+                    
+                    <div class="meal">
+                        <div class="meal-type">🍖 主菜</div>
+                        <div class="meal-name">${day.main.name}</div>
+                        <div class="meal-info">
+                            <span class="calorie-badge">${day.main.calories * day.servings} kcal</span>
+                            <span class="difficulty-badge difficulty-${day.difficulty === '簡単' ? 'easy' : 'gourmet'}">
+                                ${day.difficulty}
+                            </span>
+                        </div>
+                        <div class="ingredients-list">材料: ${day.main.ingredients.join('、')}</div>
+                    </div>
+                    
+                    <div class="meal">
+                        <div class="meal-type">🥗 副菜</div>
+                        <div class="meal-name">${day.side.name}</div>
+                        <div class="meal-info">
+                            <span class="calorie-badge">${day.side.calories * day.servings} kcal</span>
+                        </div>
+                        <div class="ingredients-list">材料: ${day.side.ingredients.join('、')}</div>
+                    </div>
+                    
+                    <div class="meal">
+                        <div class="meal-type">🍵 汁物</div>
+                        <div class="meal-name">${day.soup.name}</div>
+                        <div class="meal-info">
+                            <span class="calorie-badge">${day.soup.calories * day.servings} kcal</span>
+                        </div>
+                        <div class="ingredients-list">材料: ${day.soup.ingredients.join('、')}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function generateShoppingList() {
+            if (weekMenu.length === 0) {
+                alert('先に献立を作成してください！');
+                return;
+            }
+            
+            const allIngredients = {};
+            
+            weekMenu.forEach(day => {
+                [...day.main.ingredients, ...day.side.ingredients, ...day.soup.ingredients].forEach(ingredient => {
+                    if (allIngredients[ingredient]) {
+                        allIngredients[ingredient]++;
+                    } else {
+                        allIngredients[ingredient] = 1;
+                    }
+                });
+            });
+            
+            const shoppingListDiv = document.getElementById('shopping-list');
+            const ingredientsList = Object.entries(allIngredients)
+                .sort((a, b) => a[0].localeCompare(b[0], 'ja'));
+            
+            shoppingListDiv.innerHTML = `
+                <ul class="shopping-list">
+                    ${ingredientsList.map(([ingredient, count]) => `
+                        <li>
+                            <input type="checkbox" onchange="toggleItem(this)">
+                            <span>${ingredient} ${count > 1 ? '×' + count : ''}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+
+        function toggleItem(checkbox) {
+            checkbox.parentElement.classList.toggle('checked', checkbox.checked);
+        }
+
+        function clearAll() {
+            if (confirm('すべての献立をクリアしますか？')) {
+                weekMenu = [];
+                saveToLocalStorage();
+                renderCalendar();
+                document.getElementById('shopping-list').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🛒</div>
+                        <p>買い物リストは空です</p>
+                    </div>
+                `;
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('weekMenu', JSON.stringify(weekMenu));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('weekMenu');
+            if (saved) {
+                weekMenu = JSON.parse(saved);
+                renderCalendar();
+            }
+        }
+
+        function saveIngredientsToLocalStorage() {
+            localStorage.setItem('ingredients', JSON.stringify(ingredients));
+            localStorage.setItem('ingredientMode', ingredientMode);
+        }
+
+        function loadIngredientsFromLocalStorage() {
+            const savedIngredients = localStorage.getItem('ingredients');
+            const savedMode = localStorage.getItem('ingredientMode');
+            
+            if (savedIngredients) {
+                ingredients = JSON.parse(savedIngredients);
+                renderIngredientTags();
+            }
+            
+            if (savedMode) {
+                ingredientMode = savedMode;
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                const activeBtn = ingredientMode === 'exclude' ? 
+                    document.querySelector('.mode-btn.exclude') : 
+                    document.querySelectorAll('.mode-btn')[1];
+                if (activeBtn) activeBtn.classList.add('active');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('ingredient-input');
+            if (input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        addIngredient();
+                    }
+                });
+            }
+        });
+
+        window.onload = function() {
+            loadApiKey();
+            loadFromLocalStorage();
+            loadIngredientsFromLocalStorage();
+            updateApiStatus();
+            
+            if (weekMenu.length === 0) {
+                renderCalendar();
+            }
+            
+            document.getElementById('shopping-list').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🛒</div>
+                    <p>買い物リストは空です</p>
+                    <p>献立を作成後、「買い物リスト」ボタンを押してください</p>
+                </div>
+            `;
+        };
+    </script>
+</body>
+</html>
