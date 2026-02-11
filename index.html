@@ -350,6 +350,13 @@
             margin: 8px 0;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .meal:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         
         .meal-type {
@@ -489,6 +496,132 @@
         .setup-link:hover {
             text-decoration: underline;
         }
+
+        /* レシピモーダル */
+        .recipe-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .recipe-modal.show {
+            display: flex;
+        }
+
+        .recipe-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+        }
+
+        .recipe-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            background: none;
+            border: none;
+            padding: 0;
+            width: auto;
+        }
+
+        .recipe-close:hover {
+            color: #333;
+        }
+
+        .recipe-title {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .recipe-meta {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .recipe-section {
+            margin-bottom: 25px;
+        }
+
+        .recipe-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .recipe-ingredients {
+            list-style: none;
+            padding: 0;
+        }
+
+        .recipe-ingredients li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .recipe-ingredients li:before {
+            content: "✓ ";
+            color: #48bb78;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .recipe-steps {
+            list-style: none;
+            padding: 0;
+            counter-reset: step-counter;
+        }
+
+        .recipe-steps li {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            counter-increment: step-counter;
+            position: relative;
+            padding-left: 50px;
+        }
+
+        .recipe-steps li:before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            background: #667eea;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .click-hint {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -592,6 +725,25 @@
         </div>
     </div>
 
+    <!-- レシピモーダル -->
+    <div class="recipe-modal" id="recipe-modal" onclick="closeRecipeModal(event)">
+        <div class="recipe-content" onclick="event.stopPropagation()">
+            <button class="recipe-close" onclick="closeRecipeModal()">×</button>
+            <h2 class="recipe-title" id="recipe-title"></h2>
+            <div class="recipe-meta" id="recipe-meta"></div>
+            
+            <div class="recipe-section">
+                <h3>📝 材料</h3>
+                <ul class="recipe-ingredients" id="recipe-ingredients"></ul>
+            </div>
+            
+            <div class="recipe-section">
+                <h3>👨‍🍳 作り方</h3>
+                <ol class="recipe-steps" id="recipe-steps"></ol>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentDifficulty = '簡単';
         let weekMenu = [];
@@ -686,7 +838,6 @@
             `).join('');
         }
 
-        // Google Gemini API呼び出し（リトライ＆代替モデル対応版）
         async function callGemini(prompt, retryCount = 0) {
             if (!apiKey) {
                 alert('⚠️ 先にAPIキーを設定してください！');
@@ -694,9 +845,8 @@
             }
 
             const MAX_RETRIES = 3;
-            const RETRY_DELAY = 2000; // 2秒待機
+            const RETRY_DELAY = 2000;
             
-            // 混雑時は代替モデルも試す
             const models = ['gemini-flash-latest', 'gemini-pro'];
             const modelToUse = retryCount < 2 ? models[0] : models[1];
 
@@ -724,7 +874,6 @@
                 if (!response.ok) {
                     console.error('API Error:', data);
                     
-                    // 混雑エラーの場合はリトライ
                     if (data.error?.message?.includes('high demand') || 
                         data.error?.message?.includes('quota') ||
                         data.error?.message?.includes('rate limit')) {
@@ -752,7 +901,6 @@
             } catch (error) {
                 console.error('❌ Error:', error);
                 
-                // ネットワークエラーの場合もリトライ
                 if (error.name === 'TypeError' && retryCount < MAX_RETRIES) {
                     console.log(`⏳ ネットワークエラー。${RETRY_DELAY/1000}秒後に再試行...`);
                     await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
@@ -780,7 +928,7 @@
             const categoryText = category === 'all' ? 'ジャンルは自由' : `${category}中心`;
             const difficultyText = currentDifficulty === '簡単' ? '調理時間30分以内の簡単な料理' : '本格的な料理';
 
-            return `${dayCount}日分の夕食献立を考えてください。
+            return `${dayCount}日分の夕食献立を考えてください。各料理には詳細な作り方も含めてください。
 
 条件：
 - ${categoryText}
@@ -797,17 +945,20 @@ ${ingredientConstraint}
       "main": {
         "name": "料理名",
         "calories": 数値,
-        "ingredients": ["材料1", "材料2"]
+        "ingredients": ["材料1", "材料2"],
+        "steps": ["手順1", "手順2", "手順3"]
       },
       "side": {
         "name": "料理名",
         "calories": 数値,
-        "ingredients": ["材料1", "材料2"]
+        "ingredients": ["材料1", "材料2"],
+        "steps": ["手順1", "手順2"]
       },
       "soup": {
         "name": "料理名",
         "calories": 数値,
-        "ingredients": ["材料1", "材料2"]
+        "ingredients": ["材料1", "材料2"],
+        "steps": ["手順1", "手順2"]
       }
     }
   ]
@@ -920,6 +1071,35 @@ ${ingredientConstraint}
             btn.disabled = false;
         }
 
+        function showRecipeModal(dish, type) {
+            const modal = document.getElementById('recipe-modal');
+            document.getElementById('recipe-title').textContent = dish.name;
+            
+            const meta = document.getElementById('recipe-meta');
+            meta.innerHTML = `
+                <span class="calorie-badge">${dish.calories} kcal</span>
+                <span class="difficulty-badge difficulty-${currentDifficulty === '簡単' ? 'easy' : 'gourmet'}">${currentDifficulty}</span>
+            `;
+            
+            const ingredientsList = document.getElementById('recipe-ingredients');
+            ingredientsList.innerHTML = dish.ingredients.map(ing => `<li>${ing}</li>`).join('');
+            
+            const stepsList = document.getElementById('recipe-steps');
+            if (dish.steps && dish.steps.length > 0) {
+                stepsList.innerHTML = dish.steps.map(step => `<li>${step}</li>`).join('');
+            } else {
+                stepsList.innerHTML = '<li>作り方の詳細はAIで生成された献立に含まれます</li>';
+            }
+            
+            modal.classList.add('show');
+        }
+
+        function closeRecipeModal(event) {
+            if (!event || event.target.classList.contains('recipe-modal') || event.target.classList.contains('recipe-close')) {
+                document.getElementById('recipe-modal').classList.remove('show');
+            }
+        }
+
         function renderCalendar() {
             const calendar = document.getElementById('calendar');
             
@@ -934,7 +1114,7 @@ ${ingredientConstraint}
                 return;
             }
             
-            calendar.innerHTML = weekMenu.map(day => `
+            calendar.innerHTML = weekMenu.map((day, dayIndex) => `
                 <div class="day-card ${day.aiGenerated ? 'ai-generated' : ''}">
                     <div class="day-header">
                         <span class="day-name">
@@ -944,7 +1124,7 @@ ${ingredientConstraint}
                         <span class="day-total-calories">${day.totalCalories} kcal (${day.servings}人分)</span>
                     </div>
                     
-                    <div class="meal">
+                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].main, 'main')">
                         <div class="meal-type">🍖 主菜</div>
                         <div class="meal-name">${day.main.name}</div>
                         <div class="meal-info">
@@ -953,25 +1133,25 @@ ${ingredientConstraint}
                                 ${day.difficulty}
                             </span>
                         </div>
-                        <div class="ingredients-list">材料: ${day.main.ingredients.join('、')}</div>
+                        <div class="click-hint">👆 クリックで作り方を表示</div>
                     </div>
                     
-                    <div class="meal">
+                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].side, 'side')">
                         <div class="meal-type">🥗 副菜</div>
                         <div class="meal-name">${day.side.name}</div>
                         <div class="meal-info">
                             <span class="calorie-badge">${day.side.calories * day.servings} kcal</span>
                         </div>
-                        <div class="ingredients-list">材料: ${day.side.ingredients.join('、')}</div>
+                        <div class="click-hint">👆 クリックで作り方を表示</div>
                     </div>
                     
-                    <div class="meal">
+                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].soup, 'soup')">
                         <div class="meal-type">🍵 汁物</div>
                         <div class="meal-name">${day.soup.name}</div>
                         <div class="meal-info">
                             <span class="calorie-badge">${day.soup.calories * day.servings} kcal</span>
                         </div>
-                        <div class="ingredients-list">材料: ${day.soup.ingredients.join('、')}</div>
+                        <div class="click-hint">👆 クリックで作り方を表示</div>
                     </div>
                 </div>
             `).join('');
