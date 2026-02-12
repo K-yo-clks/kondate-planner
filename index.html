@@ -844,16 +844,14 @@
                 return null;
             }
 
-            const MAX_RETRIES = 3;
-            const RETRY_DELAY = 2000;
-            
-            const models = ['gemini-flash-latest', 'gemini-pro'];
-            const modelToUse = retryCount < 2 ? models[0] : models[1];
+            const MAX_RETRIES = 5; // 5回まで増やす
+            const BASE_DELAY = 3000; // 基本待機時間
+            const RETRY_DELAY = BASE_DELAY * (retryCount + 1); // 段階的に待機時間を増やす
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
                 
-                console.log(`🔄 試行 ${retryCount + 1}/${MAX_RETRIES + 1} - モデル: ${modelToUse}`);
+                console.log(`🔄 試行 ${retryCount + 1}/${MAX_RETRIES + 1} (${RETRY_DELAY/1000}秒待機後)`);
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -865,7 +863,11 @@
                             parts: [{
                                 text: prompt
                             }]
-                        }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 2048,
+                        }
                     })
                 });
 
@@ -874,23 +876,35 @@
                 if (!response.ok) {
                     console.error('API Error:', data);
                     
-                    if (data.error?.message?.includes('high demand') || 
+                    // リトライ可能なエラーの判定
+                    const isRetryable = 
+                        response.status === 429 || // レート制限
+                        response.status === 503 || // サービス利用不可
+                        response.status === 500 || // サーバーエラー
+                        data.error?.message?.includes('high demand') ||
                         data.error?.message?.includes('quota') ||
-                        data.error?.message?.includes('rate limit')) {
-                        
-                        if (retryCount < MAX_RETRIES) {
-                            console.log(`⏳ ${RETRY_DELAY/1000}秒後に再試行します...`);
-                            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-                            return callGemini(prompt, retryCount + 1);
-                        } else {
-                            throw new Error('サーバーが混雑しています。しばらく時間をおいてから再度お試しください。');
-                        }
+                        data.error?.message?.includes('rate limit') ||
+                        data.error?.message?.includes('overloaded');
+                    
+                    if (isRetryable && retryCount < MAX_RETRIES) {
+                        console.log(`⏳ ${RETRY_DELAY/1000}秒後に再試行します...`);
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                        return callGemini(prompt, retryCount + 1);
                     }
                     
-                    throw new Error(data.error?.message || 'API呼び出しに失敗しました');
+                    // リトライできないエラー
+                    if (response.status === 400) {
+                        throw new Error('リクエストの形式が正しくありません。');
+                    } else if (response.status === 401 || response.status === 403) {
+                        throw new Error('APIキーが無効です。新しいAPIキーを取得してください。');
+                    } else if (response.status === 404) {
+                        throw new Error('指定されたモデルが見つかりません。');
+                    }
+                    
+                    throw new Error(data.error?.message || `サーバーエラー (${response.status})`);
                 }
 
-                console.log('✅ API Success:', data);
+                console.log('✅ API Success');
                 
                 if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
                     return data.candidates[0].content.parts[0].text;
@@ -901,13 +915,20 @@
             } catch (error) {
                 console.error('❌ Error:', error);
                 
+                // ネットワークエラーの場合もリトライ
                 if (error.name === 'TypeError' && retryCount < MAX_RETRIES) {
                     console.log(`⏳ ネットワークエラー。${RETRY_DELAY/1000}秒後に再試行...`);
                     await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
                     return callGemini(prompt, retryCount + 1);
                 }
                 
-                alert('❌ エラー: ' + error.message);
+                // 最終的なエラーメッセージ
+                let userMessage = error.message;
+                if (retryCount >= MAX_RETRIES) {
+                    userMessage = `サーバーが混雑しています。\n\n以下を試してください：\n• 5〜10分待ってから再試行\n• 別の時間帯に試す\n• APIキーの使用状況を確認\n\n元のエラー: ${error.message}`;
+                }
+                
+                alert('❌ エラー: ' + userMessage);
                 return null;
             }
         }
@@ -971,6 +992,20 @@ ${ingredientConstraint}
             btn.innerHTML = '<span class="loading"></span> AI思考中... (混雑時は時間がかかります)';
             btn.disabled = true;
 
+            // ★ 前回のリクエストから5秒以上経過しているか確認
+            const lastRequestTime = localStorage.getItem('lastRequestTime') || 0;
+            const now = Date.now();
+            const timeSinceLastRequest = now - lastRequestTime;
+            const MIN_INTERVAL = 5000; // 5秒
+
+            if (timeSinceLastRequest < MIN_INTERVAL) {
+                const waitTime = MIN_INTERVAL - timeSinceLastRequest;
+                console.log(`⏳ ${waitTime/1000}秒待機します...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+
+            localStorage.setItem('lastRequestTime', Date.now());
+
             const prompt = generatePrompt(1);
             const response = await callGemini(prompt);
             
@@ -1022,11 +1057,26 @@ ${ingredientConstraint}
             btn.disabled = false;
         }
 
+        // 1週間分も同様に修正
         async function generateAIWeekMenu() {
             const btn = document.getElementById('ai-week-btn');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<span class="loading"></span> AI思考中... (混雑時は時間がかかります)';
             btn.disabled = true;
+
+            // ★ 前回のリクエストから5秒以上経過しているか確認
+            const lastRequestTime = localStorage.getItem('lastRequestTime') || 0;
+            const now = Date.now();
+            const timeSinceLastRequest = now - lastRequestTime;
+            const MIN_INTERVAL = 5000;
+
+            if (timeSinceLastRequest < MIN_INTERVAL) {
+                const waitTime = MIN_INTERVAL - timeSinceLastRequest;
+                console.log(`⏳ ${waitTime/1000}秒待機します...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+
+            localStorage.setItem('lastRequestTime', Date.now());
 
             const prompt = generatePrompt(7);
             const response = await callGemini(prompt);
