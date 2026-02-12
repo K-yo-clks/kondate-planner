@@ -180,7 +180,7 @@
         }
         
         .tag {
-            background: #667eea;
+            background: #f56565;
             color: white;
             padding: 6px 12px;
             border-radius: 20px;
@@ -190,7 +190,7 @@
             font-size: 14px;
         }
 
-        .tag.include-mode {
+        .tag.priority-mode {
             background: #48bb78;
         }
         
@@ -316,6 +316,7 @@
             margin-bottom: 15px;
             border-radius: 10px;
             border-left: 5px solid #667eea;
+            position: relative;
         }
 
         .day-card.ai-generated {
@@ -342,6 +343,33 @@
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.9em;
+        }
+
+        .day-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .day-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .btn-delete {
+            background: #f56565;
+            color: white;
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-delete:hover {
+            background: #e53e3e;
         }
         
         .meal {
@@ -622,6 +650,23 @@
             color: #999;
             margin-top: 5px;
         }
+
+        .ingredient-tabs {
+            margin-bottom: 15px;
+        }
+
+        .ingredient-mode-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .ingredient-mode-section h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -650,10 +695,6 @@
                 <small style="color: #666;">
                     ⚠️ APIキーは <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setup-link">Google AI Studio</a> で無料取得できます（クレカ不要！）
                 </small>
-            </div>
-
-            <div class="info-box">
-                💡 <strong>完全無料！</strong> Gemini APIは月1500リクエストまで無料。献立アプリなら十分すぎる枠です。
             </div>
 
             <div class="control-row">
@@ -685,24 +726,29 @@
 
             <div class="ingredient-section">
                 <label>🥬 食材設定</label>
-                <div class="mode-toggle">
-                    <button class="mode-btn exclude active" onclick="setIngredientMode('exclude')">
-                        🚫 これは使わない（除外モード）
-                    </button>
-                    <button class="mode-btn" onclick="setIngredientMode('include')">
-                        ✅ これだけ使う（限定モード）
-                    </button>
+                
+                <div class="ingredient-mode-section">
+                    <h4>🚫 除外食材（これは使わない）</h4>
+                    <div class="ingredient-input">
+                        <input type="text" id="exclude-ingredient-input" placeholder="例: えび、ナッツ、セロリ（複数可、カンマ区切り）">
+                        <button class="btn-add" onclick="addIngredient('exclude')">追加</button>
+                    </div>
+                    <div class="ingredient-tags" id="exclude-ingredient-tags"></div>
                 </div>
-                <div class="ingredient-input">
-                    <input type="text" id="ingredient-input" placeholder="例: えび、ナッツ、セロリ">
-                    <button class="btn-add" onclick="addIngredient()">追加</button>
+
+                <div class="ingredient-mode-section">
+                    <h4>⭐ 優先食材（これを優先的に使う）</h4>
+                    <div class="ingredient-input">
+                        <input type="text" id="priority-ingredient-input" placeholder="例: 鶏肉、キャベツ、トマト（複数可、カンマ区切り）">
+                        <button class="btn-add" onclick="addIngredient('priority')">追加</button>
+                    </div>
+                    <div class="ingredient-tags" id="priority-ingredient-tags"></div>
                 </div>
-                <div class="ingredient-tags" id="ingredient-tags"></div>
             </div>
             
             <div class="action-buttons">
                 <button class="btn-ai" onclick="generateAIWeekMenu()" id="ai-week-btn">
-                    🤖 AIで1週間分
+                    🤖 AIで7日分
                 </button>
                 <button class="btn-ai" onclick="generateAIDayMenu()" id="ai-day-btn">
                     🤖 AIで1日分
@@ -747,8 +793,8 @@
     <script>
         let currentDifficulty = '簡単';
         let weekMenu = [];
-        let ingredients = [];
-        let ingredientMode = 'exclude';
+        let excludeIngredients = [];
+        let priorityIngredients = [];
         let apiKey = '';
 
         function saveApiKey() {
@@ -791,16 +837,6 @@
             }
         }
 
-        function setIngredientMode(mode) {
-            ingredientMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            renderIngredientTags();
-            saveIngredientsToLocalStorage();
-        }
-
         function setDifficulty(difficulty) {
             currentDifficulty = difficulty;
             document.querySelectorAll('.toggle-btn').forEach(btn => {
@@ -809,31 +845,54 @@
             event.target.classList.add('active');
         }
 
-        function addIngredient() {
-            const input = document.getElementById('ingredient-input');
+        function addIngredient(mode) {
+            const inputId = mode === 'exclude' ? 'exclude-ingredient-input' : 'priority-ingredient-input';
+            const input = document.getElementById(inputId);
             const value = input.value.trim();
             
-            if (value && !ingredients.includes(value)) {
-                ingredients.push(value);
-                input.value = '';
-                renderIngredientTags();
-                saveIngredientsToLocalStorage();
-            }
+            if (!value) return;
+
+            // カンマ区切りで分割
+            const items = value.split(/[、,]/).map(item => item.trim()).filter(item => item);
+            
+            items.forEach(item => {
+                if (mode === 'exclude' && !excludeIngredients.includes(item)) {
+                    excludeIngredients.push(item);
+                } else if (mode === 'priority' && !priorityIngredients.includes(item)) {
+                    priorityIngredients.push(item);
+                }
+            });
+
+            input.value = '';
+            renderIngredientTags();
+            saveIngredientsToLocalStorage();
         }
 
-        function removeIngredient(ingredient) {
-            ingredients = ingredients.filter(item => item !== ingredient);
+        function removeIngredient(ingredient, mode) {
+            if (mode === 'exclude') {
+                excludeIngredients = excludeIngredients.filter(item => item !== ingredient);
+            } else {
+                priorityIngredients = priorityIngredients.filter(item => item !== ingredient);
+            }
             renderIngredientTags();
             saveIngredientsToLocalStorage();
         }
 
         function renderIngredientTags() {
-            const container = document.getElementById('ingredient-tags');
-            const tagClass = ingredientMode === 'include' ? 'tag include-mode' : 'tag';
-            container.innerHTML = ingredients.map(ingredient => `
-                <div class="${tagClass}">
+            const excludeContainer = document.getElementById('exclude-ingredient-tags');
+            const priorityContainer = document.getElementById('priority-ingredient-tags');
+            
+            excludeContainer.innerHTML = excludeIngredients.map(ingredient => `
+                <div class="tag">
                     <span>${ingredient}</span>
-                    <span class="tag-remove" onclick="removeIngredient('${ingredient}')">×</span>
+                    <span class="tag-remove" onclick="removeIngredient('${ingredient}', 'exclude')">×</span>
+                </div>
+            `).join('');
+
+            priorityContainer.innerHTML = priorityIngredients.map(ingredient => `
+                <div class="tag priority-mode">
+                    <span>${ingredient}</span>
+                    <span class="tag-remove" onclick="removeIngredient('${ingredient}', 'priority')">×</span>
                 </div>
             `).join('');
         }
@@ -844,14 +903,15 @@
                 return null;
             }
 
-            const MAX_RETRIES = 5; // 5回まで増やす
-            const BASE_DELAY = 3000; // 基本待機時間
-            const RETRY_DELAY = BASE_DELAY * (retryCount + 1); // 段階的に待機時間を増やす
+            const MAX_RETRIES = 5;
+            const BASE_DELAY = 3000;
+            const RETRY_DELAY = BASE_DELAY * (retryCount + 1);
 
             try {
+                // ★ この行を修正（gemini-flash-latest に変更）
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
                 
-                console.log(`🔄 試行 ${retryCount + 1}/${MAX_RETRIES + 1} (${RETRY_DELAY/1000}秒待機後)`);
+                console.log(`🔄 試行 ${retryCount + 1}/${MAX_RETRIES + 1}`);
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -863,11 +923,7 @@
                             parts: [{
                                 text: prompt
                             }]
-                        }],
-                        generationConfig: {
-                            temperature: 0.7,
-                            maxOutputTokens: 2048,
-                        }
+                        }]
                     })
                 });
 
@@ -876,11 +932,10 @@
                 if (!response.ok) {
                     console.error('API Error:', data);
                     
-                    // リトライ可能なエラーの判定
                     const isRetryable = 
-                        response.status === 429 || // レート制限
-                        response.status === 503 || // サービス利用不可
-                        response.status === 500 || // サーバーエラー
+                        response.status === 429 ||
+                        response.status === 503 ||
+                        response.status === 500 ||
                         data.error?.message?.includes('high demand') ||
                         data.error?.message?.includes('quota') ||
                         data.error?.message?.includes('rate limit') ||
@@ -892,7 +947,6 @@
                         return callGemini(prompt, retryCount + 1);
                     }
                     
-                    // リトライできないエラー
                     if (response.status === 400) {
                         throw new Error('リクエストの形式が正しくありません。');
                     } else if (response.status === 401 || response.status === 403) {
@@ -915,14 +969,12 @@
             } catch (error) {
                 console.error('❌ Error:', error);
                 
-                // ネットワークエラーの場合もリトライ
                 if (error.name === 'TypeError' && retryCount < MAX_RETRIES) {
                     console.log(`⏳ ネットワークエラー。${RETRY_DELAY/1000}秒後に再試行...`);
                     await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
                     return callGemini(prompt, retryCount + 1);
                 }
                 
-                // 最終的なエラーメッセージ
                 let userMessage = error.message;
                 if (retryCount >= MAX_RETRIES) {
                     userMessage = `サーバーが混雑しています。\n\n以下を試してください：\n• 5〜10分待ってから再試行\n• 別の時間帯に試す\n• APIキーの使用状況を確認\n\n元のエラー: ${error.message}`;
@@ -937,13 +989,14 @@
             const category = document.getElementById('category').value;
             const servings = document.getElementById('servings').value;
             
-            let ingredientConstraint = '';
-            if (ingredients.length > 0) {
-                if (ingredientMode === 'exclude') {
-                    ingredientConstraint = `\n必須制約：以下の食材は絶対に使わないでください: ${ingredients.join('、')}`;
-                } else {
-                    ingredientConstraint = `\n必須制約：以下の食材のみを使って献立を考えてください: ${ingredients.join('、')}`;
-                }
+            let constraints = '';
+            
+            if (excludeIngredients.length > 0) {
+                constraints += `\n【重要】以下の食材は絶対に使わないでください: ${excludeIngredients.join('、')}`;
+            }
+            
+            if (priorityIngredients.length > 0) {
+                constraints += `\n【重要】以下の食材を優先的に使ってください: ${priorityIngredients.join('、')}`;
             }
 
             const categoryText = category === 'all' ? 'ジャンルは自由' : `${category}中心`;
@@ -955,14 +1008,14 @@
 - ${categoryText}
 - ${difficultyText}
 - ${servings}人分
-${ingredientConstraint}
+${constraints}
 
 以下のJSON形式で返してください（マークダウンのコードブロックは使わず、純粋なJSONのみ）：
 
 {
   "menus": [
     {
-      "day": "月曜日",
+      "dayNumber": 1,
       "main": {
         "name": "料理名",
         "calories": 数値,
@@ -989,14 +1042,13 @@ ${ingredientConstraint}
         async function generateAIDayMenu() {
             const btn = document.getElementById('ai-day-btn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading"></span> AI思考中... (混雑時は時間がかかります)';
+            btn.innerHTML = '<span class="loading"></span> AI思考中...';
             btn.disabled = true;
 
-            // ★ 前回のリクエストから5秒以上経過しているか確認
             const lastRequestTime = localStorage.getItem('lastRequestTime') || 0;
             const now = Date.now();
             const timeSinceLastRequest = now - lastRequestTime;
-            const MIN_INTERVAL = 5000; // 5秒
+            const MIN_INTERVAL = 5000;
 
             if (timeSinceLastRequest < MIN_INTERVAL) {
                 const waitTime = MIN_INTERVAL - timeSinceLastRequest;
@@ -1020,19 +1072,10 @@ ${ingredientConstraint}
                     const data = JSON.parse(jsonText);
                     
                     if (data.menus && data.menus.length > 0) {
-                        const dayNames = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日'];
-                        const usedDays = weekMenu.map(m => m.day);
-                        const availableDays = dayNames.filter(d => !usedDays.includes(d));
-                        
-                        if (availableDays.length === 0) {
-                            alert('すでに7日分の献立があります！');
-                            btn.innerHTML = originalText;
-                            btn.disabled = false;
-                            return;
-                        }
-                        
                         const menu = data.menus[0];
-                        menu.day = availableDays[0];
+                        const nextDayNumber = weekMenu.length > 0 ? Math.max(...weekMenu.map(m => m.dayNumber)) + 1 : 1;
+                        
+                        menu.dayNumber = nextDayNumber;
                         menu.servings = parseInt(document.getElementById('servings').value);
                         menu.difficulty = currentDifficulty;
                         menu.category = document.getElementById('category').value;
@@ -1040,6 +1083,7 @@ ${ingredientConstraint}
                             (menu.main.calories + menu.side.calories + menu.soup.calories) * menu.servings
                         );
                         menu.aiGenerated = true;
+                        menu.selected = true;
                         
                         weekMenu.push(menu);
                         saveToLocalStorage();
@@ -1057,14 +1101,12 @@ ${ingredientConstraint}
             btn.disabled = false;
         }
 
-        // 1週間分も同様に修正
         async function generateAIWeekMenu() {
             const btn = document.getElementById('ai-week-btn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading"></span> AI思考中... (混雑時は時間がかかります)';
+            btn.innerHTML = '<span class="loading"></span> AI思考中...';
             btn.disabled = true;
 
-            // ★ 前回のリクエストから5秒以上経過しているか確認
             const lastRequestTime = localStorage.getItem('lastRequestTime') || 0;
             const now = Date.now();
             const timeSinceLastRequest = now - lastRequestTime;
@@ -1095,21 +1137,23 @@ ${ingredientConstraint}
                         const servings = parseInt(document.getElementById('servings').value);
                         const category = document.getElementById('category').value;
                         
-                        weekMenu = data.menus.map(menu => ({
+                        weekMenu = data.menus.map((menu, index) => ({
                             ...menu,
+                            dayNumber: index + 1,
                             servings: servings,
                             difficulty: currentDifficulty,
                             category: category,
                             totalCalories: Math.round(
                                 (menu.main.calories + menu.side.calories + menu.soup.calories) * servings
                             ),
-                            aiGenerated: true
+                            aiGenerated: true,
+                            selected: true
                         }));
                         
                         saveToLocalStorage();
                         renderCalendar();
                         
-                        alert('✅ 1週間分の献立を作成しました！');
+                        alert('✅ 7日分の献立を作成しました！');
                     }
                 } catch (error) {
                     console.error('Parse error:', error);
@@ -1119,6 +1163,19 @@ ${ingredientConstraint}
             
             btn.innerHTML = originalText;
             btn.disabled = false;
+        }
+
+        function deleteMenu(index) {
+            if (confirm('この献立を削除しますか？')) {
+                weekMenu.splice(index, 1);
+                saveToLocalStorage();
+                renderCalendar();
+            }
+        }
+
+        function toggleMenuSelection(index) {
+            weekMenu[index].selected = !weekMenu[index].selected;
+            saveToLocalStorage();
         }
 
         function showRecipeModal(dish, type) {
@@ -1158,7 +1215,7 @@ ${ingredientConstraint}
                     <div class="empty-state">
                         <div class="empty-state-icon">📅</div>
                         <p>まだ献立がありません</p>
-                        <p>「AIで1週間分」または「AIで1日分」ボタンで献立を作りましょう！</p>
+                        <p>「AIで7日分」または「AIで1日分」ボタンで献立を作りましょう！</p>
                     </div>
                 `;
                 return;
@@ -1168,7 +1225,7 @@ ${ingredientConstraint}
                 <div class="day-card ${day.aiGenerated ? 'ai-generated' : ''}">
                     <div class="day-header">
                         <span class="day-name">
-                            ${day.day}
+                            ${day.dayNumber}日目
                             ${day.aiGenerated ? '<span class="ai-badge-small">AI</span>' : ''}
                         </span>
                         <span class="day-total-calories">${day.totalCalories} kcal (${day.servings}人分)</span>
@@ -1203,6 +1260,17 @@ ${ingredientConstraint}
                         </div>
                         <div class="click-hint">👆 クリックで作り方を表示</div>
                     </div>
+
+                    <div class="day-controls">
+                        <input type="checkbox" class="day-checkbox" 
+                               ${day.selected ? 'checked' : ''} 
+                               onchange="toggleMenuSelection(${dayIndex})"
+                               onclick="event.stopPropagation()">
+                        <label style="flex: 1; cursor: pointer;" onclick="document.querySelectorAll('.day-checkbox')[${dayIndex}].click()">
+                            買い物リストに含める
+                        </label>
+                        <button class="btn-delete" onclick="deleteMenu(${dayIndex})">🗑️ 削除</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1213,9 +1281,16 @@ ${ingredientConstraint}
                 return;
             }
             
+            const selectedMenus = weekMenu.filter(day => day.selected);
+            
+            if (selectedMenus.length === 0) {
+                alert('買い物リストに含める献立を選択してください！');
+                return;
+            }
+            
             const allIngredients = {};
             
-            weekMenu.forEach(day => {
+            selectedMenus.forEach(day => {
                 [...day.main.ingredients, ...day.side.ingredients, ...day.soup.ingredients].forEach(ingredient => {
                     if (allIngredients[ingredient]) {
                         allIngredients[ingredient]++;
@@ -1230,6 +1305,9 @@ ${ingredientConstraint}
                 .sort((a, b) => a[0].localeCompare(b[0], 'ja'));
             
             shoppingListDiv.innerHTML = `
+                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                    選択中: ${selectedMenus.length}日分の献立
+                </p>
                 <ul class="shopping-list">
                     ${ingredientsList.map(([ingredient, count]) => `
                         <li>
@@ -1272,37 +1350,41 @@ ${ingredientConstraint}
         }
 
         function saveIngredientsToLocalStorage() {
-            localStorage.setItem('ingredients', JSON.stringify(ingredients));
-            localStorage.setItem('ingredientMode', ingredientMode);
+            localStorage.setItem('excludeIngredients', JSON.stringify(excludeIngredients));
+            localStorage.setItem('priorityIngredients', JSON.stringify(priorityIngredients));
         }
 
         function loadIngredientsFromLocalStorage() {
-            const savedIngredients = localStorage.getItem('ingredients');
-            const savedMode = localStorage.getItem('ingredientMode');
+            const savedExclude = localStorage.getItem('excludeIngredients');
+            const savedPriority = localStorage.getItem('priorityIngredients');
             
-            if (savedIngredients) {
-                ingredients = JSON.parse(savedIngredients);
-                renderIngredientTags();
+            if (savedExclude) {
+                excludeIngredients = JSON.parse(savedExclude);
             }
             
-            if (savedMode) {
-                ingredientMode = savedMode;
-                document.querySelectorAll('.mode-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                const activeBtn = ingredientMode === 'exclude' ? 
-                    document.querySelector('.mode-btn.exclude') : 
-                    document.querySelectorAll('.mode-btn')[1];
-                if (activeBtn) activeBtn.classList.add('active');
+            if (savedPriority) {
+                priorityIngredients = JSON.parse(savedPriority);
             }
+            
+            renderIngredientTags();
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const input = document.getElementById('ingredient-input');
-            if (input) {
-                input.addEventListener('keypress', function(e) {
+            const excludeInput = document.getElementById('exclude-ingredient-input');
+            const priorityInput = document.getElementById('priority-ingredient-input');
+            
+            if (excludeInput) {
+                excludeInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
-                        addIngredient();
+                        addIngredient('exclude');
+                    }
+                });
+            }
+            
+            if (priorityInput) {
+                priorityInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        addIngredient('priority');
                     }
                 });
             }
