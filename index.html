@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI献立プランナー（完全無料版）</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -484,6 +485,31 @@
             border-left-color: #4285f4;
             background: linear-gradient(to right, #e3f2fd 0%, #f8f9fa 100%);
         }
+
+        /* 🆕 栄養素チャート（サイズを大幅に拡大） */
+        .nutrition-chart-container {
+            margin: 15px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nutrition-chart-wrapper {
+            width: 350px;
+            height: 350px;
+            position: relative;
+        }
+
+        .nutrition-chart-title {
+            font-size: 1em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+        }
         
         .day-header {
             display: flex;
@@ -734,9 +760,9 @@
         .recipe-content {
             background: white;
             border-radius: 15px;
-            max-width: 600px;
+            max-width: 900px;
             width: 100%;
-            max-height: 80vh;
+            max-height: 85vh;
             overflow-y: auto;
             padding: 30px;
             position: relative;
@@ -902,6 +928,25 @@
         .form-actions button {
             flex: 1;
         }
+
+        /* モーダル内のチャート（サイズ拡大） */
+        .recipe-nutrition-chart {
+            width: 100%;
+            max-width: 500px;
+            height: 500px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .nutrition-chart-wrapper {
+                width: 280px;
+                height: 280px;
+            }
+
+            .recipe-nutrition-chart {
+                height: 400px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1030,7 +1075,6 @@
                 <div id="shopping-list"></div>
             </div>
 
-            <!-- お気に入りセクション -->
             <div class="favorites-section">
                 <h2>⭐ お気に入り献立</h2>
                 
@@ -1071,6 +1115,14 @@
             <h2 class="recipe-title" id="recipe-title"></h2>
             <div class="recipe-meta" id="recipe-meta"></div>
             
+            <!-- 栄養素チャート -->
+            <div class="recipe-section">
+                <h3>📊 5大栄養素バランス</h3>
+                <div class="recipe-nutrition-chart">
+                    <canvas id="recipe-nutrition-canvas"></canvas>
+                </div>
+            </div>
+
             <div class="recipe-section">
                 <h3>📝 材料</h3>
                 <ul class="recipe-ingredients" id="recipe-ingredients"></ul>
@@ -1115,6 +1167,7 @@
         let currentFilter = 'all';
         let editingFavoriteId = null;
         let apiKey = '';
+        let nutritionCharts = {};
 
         function saveApiKey() {
             const key = document.getElementById('api-key').value.trim();
@@ -1215,7 +1268,64 @@
             `).join('');
         }
 
-        // お気に入り関連機能
+        function createNutritionChart(canvasId, nutrition) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return null;
+
+            return new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['炭水化物', 'タンパク質', '脂質', 'ビタミン', 'ミネラル'],
+                    datasets: [{
+                        label: '栄養バランス',
+                        data: [
+                            nutrition.carbohydrate,
+                            nutrition.protein,
+                            nutrition.fat,
+                            nutrition.vitamin,
+                            nutrition.mineral
+                        ],
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(102, 126, 234, 1)',
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
         function addToFavorites(menuIndex) {
             const menu = weekMenu[menuIndex];
             
@@ -1519,7 +1629,7 @@
             const categoryText = category === 'all' ? 'ジャンルは自由' : `${category}中心`;
             const difficultyText = currentDifficulty === '簡単' ? '調理時間30分以内の簡単な料理' : '本格的な料理';
 
-            return `${dayCount}日分の夕食献立を考えてください。各料理には詳細な作り方も含めてください。
+            return `${dayCount}日分の夕食献立を考えてください。各料理には詳細な作り方と栄養素バランスも含めてください。
 
 条件：
 - ${categoryText}
@@ -1534,6 +1644,13 @@ ${constraints}
     {
       "dayNumber": 1,
       "healthNote": "この献立の健康面でのポイント（簡潔に）",
+      "nutrition": {
+        "carbohydrate": 50,
+        "protein": 70,
+        "fat": 40,
+        "vitamin": 80,
+        "mineral": 60
+      },
       "main": {
         "name": "料理名",
         "calories": 数値,
@@ -1554,7 +1671,14 @@ ${constraints}
       }
     }
   ]
-}`;
+}
+
+nutritionの各値は0-100のスケールで、献立全体の栄養バランスを評価してください。
+- carbohydrate: 炭水化物の充実度
+- protein: タンパク質の充実度
+- fat: 脂質の適切さ
+- vitamin: ビタミン類の豊富さ
+- mineral: ミネラル類の豊富さ`;
         }
 
         async function generateAIDayMenu() {
@@ -1699,8 +1823,12 @@ ${constraints}
             saveToLocalStorage();
         }
 
-        function showRecipeModal(dish, type) {
+        let currentRecipeNutrition = null;
+
+        function showRecipeModal(dish, type, menuIndex) {
             const modal = document.getElementById('recipe-modal');
+            const menu = weekMenu[menuIndex];
+            
             document.getElementById('recipe-title').textContent = dish.name;
             
             const meta = document.getElementById('recipe-meta');
@@ -1718,6 +1846,16 @@ ${constraints}
             } else {
                 stepsList.innerHTML = '<li>作り方の詳細はAIで生成された献立に含まれます</li>';
             }
+
+            if (menu.nutrition) {
+                currentRecipeNutrition = menu.nutrition;
+                setTimeout(() => {
+                    if (nutritionCharts.recipe) {
+                        nutritionCharts.recipe.destroy();
+                    }
+                    nutritionCharts.recipe = createNutritionChart('recipe-nutrition-canvas', menu.nutrition);
+                }, 100);
+            }
             
             modal.classList.add('show');
         }
@@ -1730,6 +1868,13 @@ ${constraints}
 
         function renderCalendar() {
             const calendar = document.getElementById('calendar');
+            
+            Object.keys(nutritionCharts).forEach(key => {
+                if (key.startsWith('day-') && nutritionCharts[key]) {
+                    nutritionCharts[key].destroy();
+                    delete nutritionCharts[key];
+                }
+            });
             
             if (weekMenu.length === 0) {
                 calendar.innerHTML = `
@@ -1754,7 +1899,18 @@ ${constraints}
                     
                     ${day.healthNote ? `<div class="health-badge">💊 ${day.healthNote}</div>` : ''}
                     
-                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].main, 'main')">
+                    ${day.nutrition ? `
+                        <div class="nutrition-chart-container">
+                            <div>
+                                <div class="nutrition-chart-title">📊 5大栄養素バランス</div>
+                                <div class="nutrition-chart-wrapper">
+                                    <canvas id="nutrition-chart-${dayIndex}"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].main, 'main', ${dayIndex})">
                         <div class="meal-type">🍖 主菜</div>
                         <div class="meal-name">${day.main.name}</div>
                         <div class="meal-info">
@@ -1766,7 +1922,7 @@ ${constraints}
                         <div class="click-hint">👆 クリックで作り方を表示</div>
                     </div>
                     
-                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].side, 'side')">
+                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].side, 'side', ${dayIndex})">
                         <div class="meal-type">🥗 副菜</div>
                         <div class="meal-name">${day.side.name}</div>
                         <div class="meal-info">
@@ -1775,7 +1931,7 @@ ${constraints}
                         <div class="click-hint">👆 クリックで作り方を表示</div>
                     </div>
                     
-                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].soup, 'soup')">
+                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].soup, 'soup', ${dayIndex})">
                         <div class="meal-type">🍵 汁物</div>
                         <div class="meal-name">${day.soup.name}</div>
                         <div class="meal-info">
@@ -1797,6 +1953,15 @@ ${constraints}
                     </div>
                 </div>
             `).join('');
+
+            setTimeout(() => {
+                weekMenu.forEach((day, index) => {
+                    if (day.nutrition) {
+                        const chartId = `nutrition-chart-${index}`;
+                        nutritionCharts[`day-${index}`] = createNutritionChart(chartId, day.nutrition);
+                    }
+                });
+            }, 100);
         }
 
         function generateShoppingList() {
