@@ -392,7 +392,7 @@
             margin-bottom: 15px;
             border-radius: 10px;
             border: 2px solid #ffa500;
-            cursor: move;
+            cursor: pointer;
             transition: 0.2s;
         }
 
@@ -471,6 +471,13 @@
             border-radius: 12px;
             font-size: 0.8em;
         }
+
+        .favorite-click-hint {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 8px;
+            text-align: center;
+        }
         
         .day-card {
             background: #f8f9fa;
@@ -486,7 +493,6 @@
             background: linear-gradient(to right, #e3f2fd 0%, #f8f9fa 100%);
         }
 
-        /* 🆕 栄養素チャート（サイズを大幅に拡大） */
         .nutrition-chart-container {
             margin: 15px 0;
             padding: 20px;
@@ -929,7 +935,74 @@
             flex: 1;
         }
 
-        /* モーダル内のチャート（サイズ拡大） */
+        /* 🆕 お気に入り詳細モーダル */
+        .favorite-detail-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1002;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .favorite-detail-modal.show {
+            display: flex;
+        }
+
+        .favorite-detail-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 1000px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+        }
+
+        .favorite-detail-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            background: none;
+            border: none;
+            padding: 0;
+            width: auto;
+        }
+
+        .favorite-detail-close:hover {
+            color: #333;
+        }
+
+        .favorite-detail-title {
+            font-size: 1.8em;
+            color: #ffa500;
+            margin-bottom: 10px;
+        }
+
+        .favorite-detail-info {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .meal-detail-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
         .recipe-nutrition-chart {
             width: 100%;
             max-width: 500px;
@@ -1115,7 +1188,6 @@
             <h2 class="recipe-title" id="recipe-title"></h2>
             <div class="recipe-meta" id="recipe-meta"></div>
             
-            <!-- 栄養素チャート -->
             <div class="recipe-section">
                 <h3>📊 5大栄養素バランス</h3>
                 <div class="recipe-nutrition-chart">
@@ -1154,6 +1226,24 @@
                 <button class="btn-secondary" onclick="saveFavoriteEdit()">保存</button>
                 <button class="btn-primary" onclick="closeFavoriteEditModal()">キャンセル</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 🆕 お気に入り詳細モーダル -->
+    <div class="favorite-detail-modal" id="favorite-detail-modal" onclick="closeFavoriteDetailModal(event)">
+        <div class="favorite-detail-content" onclick="event.stopPropagation()">
+            <button class="favorite-detail-close" onclick="closeFavoriteDetailModal()">×</button>
+            <h2 class="favorite-detail-title" id="favorite-detail-title"></h2>
+            <div class="favorite-detail-info" id="favorite-detail-info"></div>
+
+            <div class="recipe-section">
+                <h3>📊 5大栄養素バランス</h3>
+                <div class="recipe-nutrition-chart">
+                    <canvas id="favorite-nutrition-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="recipe-section" id="favorite-detail-dishes"></div>
         </div>
     </div>
 
@@ -1353,7 +1443,8 @@
             alert('⭐ お気に入りに追加しました！');
         }
 
-        function deleteFavorite(favoriteId) {
+        function deleteFavorite(favoriteId, event) {
+            event.stopPropagation();
             if (!confirm('このお気に入りを削除しますか？')) return;
             
             favorites = favorites.filter(f => f.id !== favoriteId);
@@ -1361,7 +1452,8 @@
             renderFavorites();
         }
 
-        function addFavoriteToCalendar(favoriteId) {
+        function addFavoriteToCalendar(favoriteId, event) {
+            event.stopPropagation();
             const favorite = favorites.find(f => f.id === favoriteId);
             if (!favorite) return;
 
@@ -1376,7 +1468,8 @@
             alert('📅 カレンダーに追加しました！');
         }
 
-        function openFavoriteEditModal(favoriteId) {
+        function openFavoriteEditModal(favoriteId, event) {
+            event.stopPropagation();
             editingFavoriteId = favoriteId;
             const favorite = favorites.find(f => f.id === favoriteId);
             
@@ -1402,6 +1495,89 @@
             saveFavoritesToLocalStorage();
             renderFavorites();
             closeFavoriteEditModal();
+        }
+
+        // 🆕 お気に入り詳細表示
+        function showFavoriteDetail(favoriteId) {
+            const favorite = favorites.find(f => f.id === favoriteId);
+            if (!favorite) return;
+
+            const menu = favorite.menu;
+            const modal = document.getElementById('favorite-detail-modal');
+
+            document.getElementById('favorite-detail-title').textContent = favorite.name;
+            
+            const caloriesPerPerson = Math.round(menu.totalCalories / menu.servings);
+            const info = document.getElementById('favorite-detail-info');
+            info.innerHTML = `
+                <span class="calorie-badge">${caloriesPerPerson} kcal/人</span>
+                <span class="calorie-badge">${menu.totalCalories} kcal（${menu.servings}人分）</span>
+                <span class="difficulty-badge difficulty-${menu.difficulty === '簡単' ? 'easy' : 'gourmet'}">
+                    ${menu.difficulty}
+                </span>
+                ${menu.healthNote ? `<span class="health-badge">💊 ${menu.healthNote}</span>` : ''}
+            `;
+
+            // 栄養チャート表示
+            if (menu.nutrition) {
+                setTimeout(() => {
+                    if (nutritionCharts.favoriteDetail) {
+                        nutritionCharts.favoriteDetail.destroy();
+                    }
+                    nutritionCharts.favoriteDetail = createNutritionChart('favorite-nutrition-canvas', menu.nutrition);
+                }, 100);
+            }
+
+            // 料理詳細表示
+            const dishesContainer = document.getElementById('favorite-detail-dishes');
+            dishesContainer.innerHTML = `
+                <div class="meal-detail-card">
+                    <h3 style="color: #667eea; margin-bottom: 10px;">🍖 主菜: ${menu.main.name}</h3>
+                    <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.main.calories} kcal/人</span></p>
+                    <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
+                    <ul class="recipe-ingredients">
+                        ${menu.main.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                    </ul>
+                    <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
+                    <ol class="recipe-steps">
+                        ${menu.main.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+                </div>
+
+                <div class="meal-detail-card">
+                    <h3 style="color: #667eea; margin-bottom: 10px;">🥗 副菜: ${menu.side.name}</h3>
+                    <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.side.calories} kcal/人</span></p>
+                    <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
+                    <ul class="recipe-ingredients">
+                        ${menu.side.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                    </ul>
+                    <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
+                    <ol class="recipe-steps">
+                        ${menu.side.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+                </div>
+
+                <div class="meal-detail-card">
+                    <h3 style="color: #667eea; margin-bottom: 10px;">🍵 汁物: ${menu.soup.name}</h3>
+                    <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.soup.calories} kcal/人</span></p>
+                    <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
+                    <ul class="recipe-ingredients">
+                        ${menu.soup.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                    </ul>
+                    <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
+                    <ol class="recipe-steps">
+                        ${menu.soup.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+                </div>
+            `;
+
+            modal.classList.add('show');
+        }
+
+        function closeFavoriteDetailModal(event) {
+            if (!event || event.target.classList.contains('favorite-detail-modal') || event.target.classList.contains('favorite-detail-close')) {
+                document.getElementById('favorite-detail-modal').classList.remove('show');
+            }
         }
 
         function setFavoriteFilter(filter) {
@@ -1432,18 +1608,19 @@
 
             container.innerHTML = filteredFavorites.map(favorite => {
                 const menu = favorite.menu;
+                const caloriesPerPerson = Math.round(menu.totalCalories / menu.servings);
                 return `
-                    <div class="favorite-card" data-id="${favorite.id}">
+                    <div class="favorite-card" data-id="${favorite.id}" onclick="showFavoriteDetail(${favorite.id})">
                         <div class="favorite-header">
                             <div class="favorite-title">${favorite.name}</div>
                             <div class="favorite-actions">
-                                <button class="favorite-btn" onclick="addFavoriteToCalendar(${favorite.id})" title="カレンダーに追加">
+                                <button class="favorite-btn" onclick="addFavoriteToCalendar(${favorite.id}, event)" title="カレンダーに追加">
                                     📅
                                 </button>
-                                <button class="favorite-btn" onclick="openFavoriteEditModal(${favorite.id})" title="編集">
+                                <button class="favorite-btn" onclick="openFavoriteEditModal(${favorite.id}, event)" title="編集">
                                     ✏️
                                 </button>
-                                <button class="favorite-btn delete" onclick="deleteFavorite(${favorite.id})" title="削除">
+                                <button class="favorite-btn delete" onclick="deleteFavorite(${favorite.id}, event)" title="削除">
                                     🗑️
                                 </button>
                             </div>
@@ -1454,7 +1631,7 @@
                         </div>
 
                         <div style="font-size: 0.85em; color: #999;">
-                            ${menu.totalCalories} kcal (${menu.servings}人分) • ${menu.difficulty}
+                            ${caloriesPerPerson} kcal/人 (${menu.servings}人分) • ${menu.difficulty}
                         </div>
 
                         ${favorite.tags.length > 0 ? `
@@ -1481,6 +1658,8 @@
                                 📝 ${favorite.memo}
                             </div>
                         ` : ''}
+
+                        <div class="favorite-click-hint">👆 クリックで詳細を表示</div>
                     </div>
                 `;
             }).join('');
@@ -1489,6 +1668,7 @@
                 new Sortable(container, {
                     animation: 150,
                     ghostClass: 'sortable-ghost',
+                    handle: '.favorite-card',
                     onEnd: function(evt) {
                         const itemId = parseInt(evt.item.dataset.id);
                         const newIndex = evt.newIndex;
@@ -1678,7 +1858,9 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
 - protein: タンパク質の充実度
 - fat: 脂質の適切さ
 - vitamin: ビタミン類の豊富さ
-- mineral: ミネラル類の豊富さ`;
+- mineral: ミネラル類の豊富さ
+
+caloriesは1人分のカロリーを指定してください。`;
         }
 
         async function generateAIDayMenu() {
@@ -1833,7 +2015,7 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
             
             const meta = document.getElementById('recipe-meta');
             meta.innerHTML = `
-                <span class="calorie-badge">${dish.calories} kcal</span>
+                <span class="calorie-badge">${dish.calories} kcal/人</span>
                 <span class="difficulty-badge difficulty-${currentDifficulty === '簡単' ? 'easy' : 'gourmet'}">${currentDifficulty}</span>
             `;
             
@@ -1887,14 +2069,16 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
                 return;
             }
             
-            calendar.innerHTML = weekMenu.map((day, dayIndex) => `
+            calendar.innerHTML = weekMenu.map((day, dayIndex) => {
+                const caloriesPerPerson = Math.round(day.totalCalories / day.servings);
+                return `
                 <div class="day-card ${day.aiGenerated ? 'ai-generated' : ''}">
                     <div class="day-header">
                         <span class="day-name">
                             ${day.dayNumber}日目
                             ${day.aiGenerated ? '<span class="ai-badge-small">AI</span>' : ''}
                         </span>
-                        <span class="day-total-calories">${day.totalCalories} kcal (${day.servings}人分)</span>
+                        <span class="day-total-calories">${caloriesPerPerson} kcal/人 (${day.servings}人分)</span>
                     </div>
                     
                     ${day.healthNote ? `<div class="health-badge">💊 ${day.healthNote}</div>` : ''}
@@ -1914,7 +2098,7 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
                         <div class="meal-type">🍖 主菜</div>
                         <div class="meal-name">${day.main.name}</div>
                         <div class="meal-info">
-                            <span class="calorie-badge">${day.main.calories * day.servings} kcal</span>
+                            <span class="calorie-badge">${day.main.calories} kcal/人</span>
                             <span class="difficulty-badge difficulty-${day.difficulty === '簡単' ? 'easy' : 'gourmet'}">
                                 ${day.difficulty}
                             </span>
@@ -1926,7 +2110,7 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
                         <div class="meal-type">🥗 副菜</div>
                         <div class="meal-name">${day.side.name}</div>
                         <div class="meal-info">
-                            <span class="calorie-badge">${day.side.calories * day.servings} kcal</span>
+                            <span class="calorie-badge">${day.side.calories} kcal/人</span>
                         </div>
                         <div class="click-hint">👆 クリックで作り方を表示</div>
                     </div>
@@ -1935,7 +2119,7 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
                         <div class="meal-type">🍵 汁物</div>
                         <div class="meal-name">${day.soup.name}</div>
                         <div class="meal-info">
-                            <span class="calorie-badge">${day.soup.calories * day.servings} kcal</span>
+                            <span class="calorie-badge">${day.soup.calories} kcal/人</span>
                         </div>
                         <div class="click-hint">👆 クリックで作り方を表示</div>
                     </div>
@@ -1952,7 +2136,7 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
                         <button class="btn-delete" onclick="deleteMenu(${dayIndex})">🗑️ 削除</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
             setTimeout(() => {
                 weekMenu.forEach((day, index) => {
