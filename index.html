@@ -118,6 +118,25 @@
             color: white;
         }
 
+        /* 🆕 味の濃さボタン用 */
+        .taste-toggle-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ff8c00;
+            background: white;
+            color: #ff8c00;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+        
+        .taste-toggle-btn.active {
+            background: #ff8c00;
+            color: white;
+        }
+
         .mode-toggle {
             display: flex;
             gap: 10px;
@@ -477,6 +496,16 @@
             color: #999;
             margin-top: 8px;
             text-align: center;
+        }
+
+        /* 🆕 味の濃さバッジ */
+        .taste-badge {
+            background: #ff8c00;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 5px;
         }
         
         .day-card {
@@ -935,7 +964,7 @@
             flex: 1;
         }
 
-        /* 🆕 お気に入り詳細モーダル */
+        /* お気に入り詳細モーダル */
         .favorite-detail-modal {
             display: none;
             position: fixed;
@@ -1073,6 +1102,18 @@
                     <div class="toggle-buttons">
                         <button class="toggle-btn active" onclick="setDifficulty('簡単')">簡単に</button>
                         <button class="toggle-btn" onclick="setDifficulty('こだわり')">こだわって</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🆕 味の濃さ設定 -->
+            <div class="control-row">
+                <div class="control-group">
+                    <label>🧂 味の濃さ（調味料の量）</label>
+                    <div class="toggle-buttons">
+                        <button class="taste-toggle-btn" onclick="setTasteIntensity('薄め')">薄め</button>
+                        <button class="taste-toggle-btn active" onclick="setTasteIntensity('普通')">普通</button>
+                        <button class="taste-toggle-btn" onclick="setTasteIntensity('濃いめ')">濃いめ</button>
                     </div>
                 </div>
             </div>
@@ -1229,7 +1270,7 @@
         </div>
     </div>
 
-    <!-- 🆕 お気に入り詳細モーダル -->
+    <!-- お気に入り詳細モーダル -->
     <div class="favorite-detail-modal" id="favorite-detail-modal" onclick="closeFavoriteDetailModal(event)">
         <div class="favorite-detail-content" onclick="event.stopPropagation()">
             <button class="favorite-detail-close" onclick="closeFavoriteDetailModal()">×</button>
@@ -1250,6 +1291,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script>
         let currentDifficulty = '簡単';
+        let currentTasteIntensity = '普通'; // 🆕 味の濃さ
         let weekMenu = [];
         let excludeIngredients = [];
         let priorityIngredients = [];
@@ -1305,6 +1347,36 @@
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
+            saveTasteSettings(); // 🆕
+        }
+
+        // 🆕 味の濃さ設定
+        function setTasteIntensity(intensity) {
+            currentTasteIntensity = intensity;
+            document.querySelectorAll('.taste-toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            saveTasteSettings();
+        }
+
+        // 🆕 味の濃さ設定を保存
+        function saveTasteSettings() {
+            localStorage.setItem('tasteIntensity', currentTasteIntensity);
+        }
+
+        // 🆕 味の濃さ設定を読み込み
+        function loadTasteSettings() {
+            const saved = localStorage.getItem('tasteIntensity');
+            if (saved) {
+                currentTasteIntensity = saved;
+                document.querySelectorAll('.taste-toggle-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent === saved) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
         }
 
         function addIngredient(mode) {
@@ -1497,7 +1569,6 @@
             closeFavoriteEditModal();
         }
 
-        // 🆕 お気に入り詳細表示
         function showFavoriteDetail(favoriteId) {
             const favorite = favorites.find(f => f.id === favoriteId);
             if (!favorite) return;
@@ -1508,6 +1579,10 @@
             document.getElementById('favorite-detail-title').textContent = favorite.name;
             
             const caloriesPerPerson = Math.round(menu.totalCalories / menu.servings);
+            
+            // 🆕 味の濃さバッジ表示
+            const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
+            
             const info = document.getElementById('favorite-detail-info');
             info.innerHTML = `
                 <span class="calorie-badge">${caloriesPerPerson} kcal/人</span>
@@ -1515,10 +1590,10 @@
                 <span class="difficulty-badge difficulty-${menu.difficulty === '簡単' ? 'easy' : 'gourmet'}">
                     ${menu.difficulty}
                 </span>
+                ${tasteBadge}
                 ${menu.healthNote ? `<span class="health-badge">💊 ${menu.healthNote}</span>` : ''}
             `;
 
-            // 栄養チャート表示
             if (menu.nutrition) {
                 setTimeout(() => {
                     if (nutritionCharts.favoriteDetail) {
@@ -1528,7 +1603,6 @@
                 }, 100);
             }
 
-            // 料理詳細表示
             const dishesContainer = document.getElementById('favorite-detail-dishes');
             dishesContainer.innerHTML = `
                 <div class="meal-detail-card">
@@ -1609,6 +1683,10 @@
             container.innerHTML = filteredFavorites.map(favorite => {
                 const menu = favorite.menu;
                 const caloriesPerPerson = Math.round(menu.totalCalories / menu.servings);
+                
+                // 🆕 味の濃さバッジ表示
+                const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
+                
                 return `
                     <div class="favorite-card" data-id="${favorite.id}" onclick="showFavoriteDetail(${favorite.id})">
                         <div class="favorite-header">
@@ -1631,7 +1709,7 @@
                         </div>
 
                         <div style="font-size: 0.85em; color: #999;">
-                            ${caloriesPerPerson} kcal/人 (${menu.servings}人分) • ${menu.difficulty}
+                            ${caloriesPerPerson} kcal/人 (${menu.servings}人分) • ${menu.difficulty} ${tasteBadge}
                         </div>
 
                         ${favorite.tags.length > 0 ? `
@@ -1786,6 +1864,17 @@
                 constraints += `\n【重要】以下の食材を優先的に使ってください: ${priorityIngredients.join('、')}`;
             }
 
+            // 🆕 味の濃さに関する指示を追加
+            let tasteInstruction = '';
+            if (currentTasteIntensity === '薄め') {
+                tasteInstruction = '\n【重要】味付けは「薄め」にしてください。調味料（醤油、塩、味噌、砂糖など）の量を通常の70%程度に減らしてください。材料欄には具体的な調味料の量（例：醤油 大さじ1→小さじ2）を明記してください。';
+            } else if (currentTasteIntensity === '濃いめ') {
+                tasteInstruction = '\n【重要】味付けは「濃いめ」にしてください。調味料（醤油、塩、味噌、砂糖など）の量を通常の150%程度に増やしてください。材料欄には具体的な調味料の量（例：醤油 大さじ1→大さじ1と1/3）を明記してください。';
+            } else {
+                tasteInstruction = '\n【重要】味付けは「普通」にしてください。調味料の量は一般的な標準的な量を使用してください。材料欄には具体的な調味料の量（例：醤油 大さじ1）を明記してください。';
+            }
+            constraints += tasteInstruction;
+
             const healthGoalTexts = {
                 'diabetes': '糖尿病予防を意識し、低GI食品を中心に、糖質を控えめにしてください',
                 'weight-loss': '減量・ダイエット向けに、低カロリーで満足感のあるメニューにしてください',
@@ -1834,19 +1923,19 @@ ${constraints}
       "main": {
         "name": "料理名",
         "calories": 数値,
-        "ingredients": ["材料1", "材料2"],
+        "ingredients": ["材料1 (量)", "材料2 (量)", "醤油 大さじ1"],
         "steps": ["手順1", "手順2", "手順3"]
       },
       "side": {
         "name": "料理名",
         "calories": 数値,
-        "ingredients": ["材料1", "材料2"],
+        "ingredients": ["材料1 (量)", "材料2 (量)"],
         "steps": ["手順1", "手順2"]
       },
       "soup": {
         "name": "料理名",
         "calories": 数値,
-        "ingredients": ["材料1", "材料2"],
+        "ingredients": ["材料1 (量)", "材料2 (量)"],
         "steps": ["手順1", "手順2"]
       }
     }
@@ -1860,7 +1949,8 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
 - vitamin: ビタミン類の豊富さ
 - mineral: ミネラル類の豊富さ
 
-caloriesは1人分のカロリーを指定してください。`;
+caloriesは1人分のカロリーを指定してください。
+ingredientsには調味料の具体的な量も含めてください（例：「醤油 大さじ1」「塩 小さじ1/2」）。`;
         }
 
         async function generateAIDayMenu() {
@@ -1902,6 +1992,7 @@ caloriesは1人分のカロリーを指定してください。`;
                         menu.dayNumber = nextDayNumber;
                         menu.servings = parseInt(document.getElementById('servings').value);
                         menu.difficulty = currentDifficulty;
+                        menu.tasteIntensity = currentTasteIntensity; // 🆕 味の濃さを保存
                         menu.category = document.getElementById('category').value;
                         menu.healthGoal = document.getElementById('health-goal').value;
                         menu.totalCalories = Math.round(
@@ -1968,6 +2059,7 @@ caloriesは1人分のカロリーを指定してください。`;
                             dayNumber: index + 1,
                             servings: servings,
                             difficulty: currentDifficulty,
+                            tasteIntensity: currentTasteIntensity, // 🆕 味の濃さを保存
                             category: category,
                             healthGoal: healthGoal,
                             totalCalories: Math.round(
@@ -2013,10 +2105,14 @@ caloriesは1人分のカロリーを指定してください。`;
             
             document.getElementById('recipe-title').textContent = dish.name;
             
+            // 🆕 味の濃さバッジ表示
+            const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
+            
             const meta = document.getElementById('recipe-meta');
             meta.innerHTML = `
                 <span class="calorie-badge">${dish.calories} kcal/人</span>
                 <span class="difficulty-badge difficulty-${currentDifficulty === '簡単' ? 'easy' : 'gourmet'}">${currentDifficulty}</span>
+                ${tasteBadge}
             `;
             
             const ingredientsList = document.getElementById('recipe-ingredients');
@@ -2071,12 +2167,17 @@ caloriesは1人分のカロリーを指定してください。`;
             
             calendar.innerHTML = weekMenu.map((day, dayIndex) => {
                 const caloriesPerPerson = Math.round(day.totalCalories / day.servings);
+                
+                // 🆕 味の濃さバッジ表示
+                const tasteBadge = day.tasteIntensity ? `<span class="taste-badge">🧂 ${day.tasteIntensity}</span>` : '';
+                
                 return `
                 <div class="day-card ${day.aiGenerated ? 'ai-generated' : ''}">
                     <div class="day-header">
                         <span class="day-name">
                             ${day.dayNumber}日目
                             ${day.aiGenerated ? '<span class="ai-badge-small">AI</span>' : ''}
+                            ${tasteBadge}
                         </span>
                         <span class="day-total-calories">${caloriesPerPerson} kcal/人 (${day.servings}人分)</span>
                     </div>
@@ -2304,6 +2405,7 @@ caloriesは1人分のカロリーを指定してください。`;
             loadIngredientsFromLocalStorage();
             loadHealthSettings();
             loadFavoritesFromLocalStorage();
+            loadTasteSettings(); // 🆕 味の濃さ設定読み込み
             updateApiStatus();
             
             if (weekMenu.length === 0) {
