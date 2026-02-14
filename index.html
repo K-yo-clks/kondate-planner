@@ -19,7 +19,7 @@
         }
         
         .app-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         
@@ -81,12 +81,18 @@
             color: #333;
         }
         
-        select, input[type="number"], input[type="text"], input[type="password"] {
+        select, input[type="number"], input[type="text"], input[type="password"], textarea {
             width: 100%;
             padding: 10px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 16px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
         }
         
         .toggle-buttons {
@@ -150,6 +156,27 @@
             padding: 15px;
             background: #f8f9fa;
             border-radius: 8px;
+        }
+
+        .health-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff5f5;
+            border-radius: 8px;
+            border-left: 4px solid #f56565;
+        }
+
+        .health-section label {
+            color: #c53030;
+        }
+
+        .health-examples {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
         }
         
         .ingredient-input {
@@ -286,8 +313,18 @@
         
         .main-content {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 2fr 1fr 1fr;
             gap: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .favorites-section {
+                grid-column: 1 / -1;
+            }
         }
         
         @media (max-width: 768px) {
@@ -296,11 +333,16 @@
             }
         }
         
-        .calendar-section, .shopping-list-section {
+        .calendar-section, .shopping-list-section, .favorites-section {
             background: white;
             padding: 25px;
             border-radius: 15px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .favorites-section {
+            background: linear-gradient(135deg, #fff5e6 0%, #ffffff 100%);
+            border: 2px solid #ffa500;
         }
         
         h2 {
@@ -308,6 +350,125 @@
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 3px solid #667eea;
+        }
+
+        .favorites-section h2 {
+            border-bottom-color: #ffa500;
+        }
+
+        .favorite-filters {
+            margin-bottom: 15px;
+        }
+
+        .favorite-filter-label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            display: block;
+            font-size: 14px;
+        }
+
+        #favorite-filter {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ffa500;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+        }
+
+        #favorite-filter:focus {
+            outline: none;
+            border-color: #ff8c00;
+            box-shadow: 0 0 0 3px rgba(255, 165, 0, 0.1);
+        }
+
+        .favorite-card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: 2px solid #ffa500;
+            cursor: move;
+            transition: 0.2s;
+        }
+
+        .favorite-card:hover {
+            box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .favorite-card.sortable-ghost {
+            opacity: 0.4;
+            background: #fff5e6;
+        }
+
+        .favorite-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .favorite-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+            flex: 1;
+        }
+
+        .favorite-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .favorite-btn {
+            padding: 6px 10px;
+            font-size: 14px;
+            background: #ffa500;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .favorite-btn:hover {
+            background: #ff8c00;
+        }
+
+        .favorite-btn.delete {
+            background: #f56565;
+        }
+
+        .favorite-btn.delete:hover {
+            background: #e53e3e;
+        }
+
+        .favorite-memo {
+            background: #fff5e6;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        .favorite-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .favorite-tag-badge {
+            background: #ffa500;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
         }
         
         .day-card {
@@ -350,6 +511,7 @@
             gap: 10px;
             align-items: center;
             margin-top: 10px;
+            flex-wrap: wrap;
         }
 
         .day-checkbox {
@@ -370,6 +532,31 @@
 
         .btn-delete:hover {
             background: #e53e3e;
+        }
+
+        .btn-favorite {
+            background: #ffa500;
+            color: white;
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-favorite:hover {
+            background: #ff8c00;
+        }
+
+        .health-badge {
+            display: inline-block;
+            background: #ffd93d;
+            color: #333;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-top: 8px;
+            font-weight: bold;
         }
         
         .meal {
@@ -651,10 +838,6 @@
             margin-top: 5px;
         }
 
-        .ingredient-tabs {
-            margin-bottom: 15px;
-        }
-
         .ingredient-mode-section {
             margin-bottom: 15px;
             padding: 10px;
@@ -666,6 +849,58 @@
             font-size: 14px;
             margin-bottom: 8px;
             color: #666;
+        }
+
+        /* お気に入り編集モーダル */
+        .favorite-edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .favorite-edit-modal.show {
+            display: flex;
+        }
+
+        .favorite-edit-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+        }
+
+        .favorite-edit-content h3 {
+            color: #ffa500;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .form-actions button {
+            flex: 1;
         }
     </style>
 </head>
@@ -724,6 +959,32 @@
                 </div>
             </div>
 
+            <div class="health-section">
+                <label>🏥 健康目標・栄養バランス</label>
+                <div class="control-group" style="margin-bottom: 10px;">
+                    <select id="health-goal">
+                        <option value="none">特になし</option>
+                        <option value="diabetes">糖尿病予防（低GI・低糖質）</option>
+                        <option value="weight-loss">減量・ダイエット（低カロリー）</option>
+                        <option value="weight-gain">増量・筋肉増強（高カロリー・高タンパク）</option>
+                        <option value="high-protein">高タンパク質</option>
+                        <option value="low-carb">低糖質（ロカボ）</option>
+                        <option value="low-salt">減塩</option>
+                        <option value="high-fiber">食物繊維豊富</option>
+                        <option value="iron-rich">鉄分豊富（貧血予防）</option>
+                        <option value="calcium-rich">カルシウム豊富（骨強化）</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>📝 その他の要望・備考（自由記述）</label>
+                    <textarea id="health-notes" placeholder="例：&#10;- 腎臓に優しいメニューにしてほしい&#10;- ビタミンCを多めに摂りたい&#10;- 消化に良いものがいい&#10;- コレステロールを気にしている"></textarea>
+                    <div class="health-examples">
+                        💡 入力例：「妊娠中なので葉酸を多めに」「アスリート向けの栄養バランス」「高齢者向けに柔らかい食材で」など
+                    </div>
+                </div>
+            </div>
+
             <div class="ingredient-section">
                 <label>🥬 食材設定</label>
                 
@@ -768,6 +1029,38 @@
                 <h2>🛒 買い物リスト</h2>
                 <div id="shopping-list"></div>
             </div>
+
+            <!-- お気に入りセクション -->
+            <div class="favorites-section">
+                <h2>⭐ お気に入り献立</h2>
+                
+                <div class="favorite-filters">
+                    <label class="favorite-filter-label">🏷️ フィルター</label>
+                    <select id="favorite-filter" onchange="setFavoriteFilter(this.value)">
+                        <option value="all">すべて表示</option>
+                        <optgroup label="健康目標">
+                            <option value="diabetes">糖尿病予防</option>
+                            <option value="weight-loss">減量・ダイエット</option>
+                            <option value="weight-gain">増量・筋肉増強</option>
+                            <option value="high-protein">高タンパク質</option>
+                            <option value="low-carb">低糖質</option>
+                            <option value="low-salt">減塩</option>
+                            <option value="high-fiber">食物繊維豊富</option>
+                            <option value="iron-rich">鉄分豊富</option>
+                            <option value="calcium-rich">カルシウム豊富</option>
+                        </optgroup>
+                        <optgroup label="料理ジャンル">
+                            <option value="和食">和食</option>
+                            <option value="洋食">洋食</option>
+                            <option value="中華">中華</option>
+                            <option value="エスニック">エスニック</option>
+                            <option value="韓国料理">韓国料理</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div id="favorites-list"></div>
+            </div>
         </div>
     </div>
 
@@ -790,11 +1083,37 @@
         </div>
     </div>
 
+    <!-- お気に入り編集モーダル -->
+    <div class="favorite-edit-modal" id="favorite-edit-modal">
+        <div class="favorite-edit-content">
+            <h3>⭐ お気に入り編集</h3>
+            
+            <div class="form-group">
+                <label>献立名</label>
+                <input type="text" id="favorite-name-input">
+            </div>
+
+            <div class="form-group">
+                <label>メモ（感想・アレンジなど）</label>
+                <textarea id="favorite-memo-input" rows="4" placeholder="例：子供にも好評だった、次回は野菜を増やす、など"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="saveFavoriteEdit()">保存</button>
+                <button class="btn-primary" onclick="closeFavoriteEditModal()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script>
         let currentDifficulty = '簡単';
         let weekMenu = [];
         let excludeIngredients = [];
         let priorityIngredients = [];
+        let favorites = [];
+        let currentFilter = 'all';
+        let editingFavoriteId = null;
         let apiKey = '';
 
         function saveApiKey() {
@@ -852,7 +1171,6 @@
             
             if (!value) return;
 
-            // カンマ区切りで分割
             const items = value.split(/[、,]/).map(item => item.trim()).filter(item => item);
             
             items.forEach(item => {
@@ -897,6 +1215,184 @@
             `).join('');
         }
 
+        // お気に入り関連機能
+        function addToFavorites(menuIndex) {
+            const menu = weekMenu[menuIndex];
+            
+            const favorite = {
+                id: Date.now(),
+                name: `${menu.dayNumber}日目の献立`,
+                menu: JSON.parse(JSON.stringify(menu)),
+                memo: '',
+                createdAt: new Date().toISOString(),
+                tags: []
+            };
+
+            if (menu.healthGoal && menu.healthGoal !== 'none') {
+                favorite.tags.push(menu.healthGoal);
+            }
+            
+            if (menu.category && menu.category !== 'all') {
+                favorite.tags.push(menu.category);
+            }
+
+            favorites.push(favorite);
+            saveFavoritesToLocalStorage();
+            renderFavorites();
+            
+            alert('⭐ お気に入りに追加しました！');
+        }
+
+        function deleteFavorite(favoriteId) {
+            if (!confirm('このお気に入りを削除しますか？')) return;
+            
+            favorites = favorites.filter(f => f.id !== favoriteId);
+            saveFavoritesToLocalStorage();
+            renderFavorites();
+        }
+
+        function addFavoriteToCalendar(favoriteId) {
+            const favorite = favorites.find(f => f.id === favoriteId);
+            if (!favorite) return;
+
+            const newMenu = JSON.parse(JSON.stringify(favorite.menu));
+            newMenu.dayNumber = weekMenu.length > 0 ? Math.max(...weekMenu.map(m => m.dayNumber)) + 1 : 1;
+            newMenu.selected = true;
+
+            weekMenu.push(newMenu);
+            saveToLocalStorage();
+            renderCalendar();
+            
+            alert('📅 カレンダーに追加しました！');
+        }
+
+        function openFavoriteEditModal(favoriteId) {
+            editingFavoriteId = favoriteId;
+            const favorite = favorites.find(f => f.id === favoriteId);
+            
+            document.getElementById('favorite-name-input').value = favorite.name;
+            document.getElementById('favorite-memo-input').value = favorite.memo || '';
+            document.getElementById('favorite-edit-modal').classList.add('show');
+        }
+
+        function closeFavoriteEditModal() {
+            document.getElementById('favorite-edit-modal').classList.remove('show');
+            editingFavoriteId = null;
+        }
+
+        function saveFavoriteEdit() {
+            if (!editingFavoriteId) return;
+
+            const favorite = favorites.find(f => f.id === editingFavoriteId);
+            if (!favorite) return;
+
+            favorite.name = document.getElementById('favorite-name-input').value.trim() || favorite.name;
+            favorite.memo = document.getElementById('favorite-memo-input').value.trim();
+
+            saveFavoritesToLocalStorage();
+            renderFavorites();
+            closeFavoriteEditModal();
+        }
+
+        function setFavoriteFilter(filter) {
+            currentFilter = filter;
+            renderFavorites();
+        }
+
+        function renderFavorites() {
+            const container = document.getElementById('favorites-list');
+            
+            let filteredFavorites = favorites;
+            if (currentFilter !== 'all') {
+                filteredFavorites = favorites.filter(f => 
+                    f.tags.includes(currentFilter)
+                );
+            }
+
+            if (filteredFavorites.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⭐</div>
+                        <p>${currentFilter === 'all' ? 'お気に入りはまだありません' : 'このフィルターに該当するお気に入りはありません'}</p>
+                        <p style="font-size: 0.9em;">献立カードの「お気に入り追加」ボタンで登録できます</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredFavorites.map(favorite => {
+                const menu = favorite.menu;
+                return `
+                    <div class="favorite-card" data-id="${favorite.id}">
+                        <div class="favorite-header">
+                            <div class="favorite-title">${favorite.name}</div>
+                            <div class="favorite-actions">
+                                <button class="favorite-btn" onclick="addFavoriteToCalendar(${favorite.id})" title="カレンダーに追加">
+                                    📅
+                                </button>
+                                <button class="favorite-btn" onclick="openFavoriteEditModal(${favorite.id})" title="編集">
+                                    ✏️
+                                </button>
+                                <button class="favorite-btn delete" onclick="deleteFavorite(${favorite.id})" title="削除">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 0.9em; color: #666; margin-bottom: 8px;">
+                            ${menu.main.name} / ${menu.side.name} / ${menu.soup.name}
+                        </div>
+
+                        <div style="font-size: 0.85em; color: #999;">
+                            ${menu.totalCalories} kcal (${menu.servings}人分) • ${menu.difficulty}
+                        </div>
+
+                        ${favorite.tags.length > 0 ? `
+                            <div class="favorite-tags">
+                                ${favorite.tags.map(tag => {
+                                    const tagNames = {
+                                        'diabetes': '糖尿病予防',
+                                        'weight-loss': '減量',
+                                        'weight-gain': '増量',
+                                        'high-protein': '高タンパク',
+                                        'low-carb': '低糖質',
+                                        'low-salt': '減塩',
+                                        'high-fiber': '食物繊維',
+                                        'iron-rich': '鉄分',
+                                        'calcium-rich': 'カルシウム'
+                                    };
+                                    return `<span class="favorite-tag-badge">${tagNames[tag] || tag}</span>`;
+                                }).join('')}
+                            </div>
+                        ` : ''}
+
+                        ${favorite.memo ? `
+                            <div class="favorite-memo">
+                                📝 ${favorite.memo}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            if (window.Sortable) {
+                new Sortable(container, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function(evt) {
+                        const itemId = parseInt(evt.item.dataset.id);
+                        const newIndex = evt.newIndex;
+                        
+                        const item = favorites.find(f => f.id === itemId);
+                        favorites = favorites.filter(f => f.id !== itemId);
+                        favorites.splice(newIndex, 0, item);
+                        
+                        saveFavoritesToLocalStorage();
+                    }
+                });
+            }
+        }
+
         async function callGemini(prompt, retryCount = 0) {
             if (!apiKey) {
                 alert('⚠️ 先にAPIキーを設定してください！');
@@ -908,7 +1404,6 @@
             const RETRY_DELAY = BASE_DELAY * (retryCount + 1);
 
             try {
-                // ★ この行を修正（gemini-flash-latest に変更）
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
                 
                 console.log(`🔄 試行 ${retryCount + 1}/${MAX_RETRIES + 1}`);
@@ -988,6 +1483,8 @@
         function generatePrompt(dayCount) {
             const category = document.getElementById('category').value;
             const servings = document.getElementById('servings').value;
+            const healthGoal = document.getElementById('health-goal').value;
+            const healthNotes = document.getElementById('health-notes').value.trim();
             
             let constraints = '';
             
@@ -997,6 +1494,26 @@
             
             if (priorityIngredients.length > 0) {
                 constraints += `\n【重要】以下の食材を優先的に使ってください: ${priorityIngredients.join('、')}`;
+            }
+
+            const healthGoalTexts = {
+                'diabetes': '糖尿病予防を意識し、低GI食品を中心に、糖質を控えめにしてください',
+                'weight-loss': '減量・ダイエット向けに、低カロリーで満足感のあるメニューにしてください',
+                'weight-gain': '増量・筋肉増強向けに、高カロリー・高タンパク質のメニューにしてください',
+                'high-protein': '高タンパク質の食材を多く使用してください',
+                'low-carb': '低糖質（ロカボ）を意識し、炭水化物を控えめにしてください',
+                'low-salt': '減塩を意識し、塩分控えめの調理法や食材を選んでください',
+                'high-fiber': '食物繊維が豊富な野菜や海藻、きのこ類を多く取り入れてください',
+                'iron-rich': '鉄分が豊富な食材（レバー、ほうれん草、ひじきなど）を積極的に使用してください',
+                'calcium-rich': 'カルシウムが豊富な食材（乳製品、小魚、大豆製品など）を多く使用してください'
+            };
+
+            if (healthGoal !== 'none' && healthGoalTexts[healthGoal]) {
+                constraints += `\n【健康目標】${healthGoalTexts[healthGoal]}`;
+            }
+
+            if (healthNotes) {
+                constraints += `\n【その他の要望】${healthNotes}`;
             }
 
             const categoryText = category === 'all' ? 'ジャンルは自由' : `${category}中心`;
@@ -1016,6 +1533,7 @@ ${constraints}
   "menus": [
     {
       "dayNumber": 1,
+      "healthNote": "この献立の健康面でのポイント（簡潔に）",
       "main": {
         "name": "料理名",
         "calories": 数値,
@@ -1079,6 +1597,7 @@ ${constraints}
                         menu.servings = parseInt(document.getElementById('servings').value);
                         menu.difficulty = currentDifficulty;
                         menu.category = document.getElementById('category').value;
+                        menu.healthGoal = document.getElementById('health-goal').value;
                         menu.totalCalories = Math.round(
                             (menu.main.calories + menu.side.calories + menu.soup.calories) * menu.servings
                         );
@@ -1136,6 +1655,7 @@ ${constraints}
                     if (data.menus && data.menus.length > 0) {
                         const servings = parseInt(document.getElementById('servings').value);
                         const category = document.getElementById('category').value;
+                        const healthGoal = document.getElementById('health-goal').value;
                         
                         weekMenu = data.menus.map((menu, index) => ({
                             ...menu,
@@ -1143,6 +1663,7 @@ ${constraints}
                             servings: servings,
                             difficulty: currentDifficulty,
                             category: category,
+                            healthGoal: healthGoal,
                             totalCalories: Math.round(
                                 (menu.main.calories + menu.side.calories + menu.soup.calories) * servings
                             ),
@@ -1231,6 +1752,8 @@ ${constraints}
                         <span class="day-total-calories">${day.totalCalories} kcal (${day.servings}人分)</span>
                     </div>
                     
+                    ${day.healthNote ? `<div class="health-badge">💊 ${day.healthNote}</div>` : ''}
+                    
                     <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].main, 'main')">
                         <div class="meal-type">🍖 主菜</div>
                         <div class="meal-name">${day.main.name}</div>
@@ -1269,6 +1792,7 @@ ${constraints}
                         <label style="flex: 1; cursor: pointer;" onclick="document.querySelectorAll('.day-checkbox')[${dayIndex}].click()">
                             買い物リストに含める
                         </label>
+                        <button class="btn-favorite" onclick="addToFavorites(${dayIndex})">⭐ お気に入り</button>
                         <button class="btn-delete" onclick="deleteMenu(${dayIndex})">🗑️ 削除</button>
                     </div>
                 </div>
@@ -1369,6 +1893,38 @@ ${constraints}
             renderIngredientTags();
         }
 
+        function saveHealthSettings() {
+            const healthGoal = document.getElementById('health-goal').value;
+            const healthNotes = document.getElementById('health-notes').value;
+            localStorage.setItem('healthGoal', healthGoal);
+            localStorage.setItem('healthNotes', healthNotes);
+        }
+
+        function loadHealthSettings() {
+            const savedGoal = localStorage.getItem('healthGoal');
+            const savedNotes = localStorage.getItem('healthNotes');
+            
+            if (savedGoal) {
+                document.getElementById('health-goal').value = savedGoal;
+            }
+            
+            if (savedNotes) {
+                document.getElementById('health-notes').value = savedNotes;
+            }
+        }
+
+        function saveFavoritesToLocalStorage() {
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+        }
+
+        function loadFavoritesFromLocalStorage() {
+            const saved = localStorage.getItem('favorites');
+            if (saved) {
+                favorites = JSON.parse(saved);
+                renderFavorites();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const excludeInput = document.getElementById('exclude-ingredient-input');
             const priorityInput = document.getElementById('priority-ingredient-input');
@@ -1388,16 +1944,25 @@ ${constraints}
                     }
                 });
             }
+
+            document.getElementById('health-goal').addEventListener('change', saveHealthSettings);
+            document.getElementById('health-notes').addEventListener('blur', saveHealthSettings);
         });
 
         window.onload = function() {
             loadApiKey();
             loadFromLocalStorage();
             loadIngredientsFromLocalStorage();
+            loadHealthSettings();
+            loadFavoritesFromLocalStorage();
             updateApiStatus();
             
             if (weekMenu.length === 0) {
                 renderCalendar();
+            }
+
+            if (favorites.length === 0) {
+                renderFavorites();
             }
             
             document.getElementById('shopping-list').innerHTML = `
