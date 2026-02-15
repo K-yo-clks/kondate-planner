@@ -212,6 +212,24 @@
             color: white;
         }
 
+        .staple-toggle-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #10b981;
+            background: white;
+            color: #10b981;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+        
+        .staple-toggle-btn.active {
+            background: #10b981;
+            color: white;
+        }
+
         .mode-toggle {
             display: flex;
             gap: 10px;
@@ -451,6 +469,22 @@
             border-bottom-color: #ffa500;
         }
 
+        .shopping-list-section h3 {
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shopping-list-section h3.seasoning-header {
+            color: #ff8c00;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
         .favorite-filters {
             margin-bottom: 15px;
         }
@@ -584,6 +618,15 @@
 
         .menu-type-badge {
             background: #9333ea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+        .staple-badge {
+            background: #10b981;
             color: white;
             padding: 3px 8px;
             border-radius: 12px;
@@ -1010,6 +1053,16 @@
             color: #666;
         }
 
+        .ingredient-hint {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            padding: 8px;
+            background: #fff5f5;
+            border-radius: 4px;
+            border-left: 3px solid #f56565;
+        }
+
         .favorite-edit-modal {
             display: none;
             position: fixed;
@@ -1181,6 +1234,19 @@
 
                 <div class="control-row">
                     <div class="control-group">
+                        <label>🍚 主食</label>
+                        <div class="toggle-buttons">
+                            <button class="staple-toggle-btn active" onclick="setStapleFood('白米')">白米</button>
+                            <button class="staple-toggle-btn" onclick="setStapleFood('玄米')">玄米</button>
+                            <button class="staple-toggle-btn" onclick="setStapleFood('パン')">パン</button>
+                            <button class="staple-toggle-btn" onclick="setStapleFood('麺類')">麺類</button>
+                            <button class="staple-toggle-btn" onclick="setStapleFood('おまかせ')">おまかせ</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-row">
+                    <div class="control-group">
                         <label>⚡ 調理スタイル</label>
                         <div class="toggle-buttons">
                             <button class="toggle-btn active" onclick="setDifficulty('簡単')">簡単に</button>
@@ -1245,6 +1311,10 @@
                                 <div class="ingredient-input">
                                     <input type="text" id="exclude-ingredient-input" placeholder="例: えび、ナッツ、セロリ（複数可、カンマ区切り）">
                                     <button class="btn-add" onclick="addIngredient('exclude')">追加</button>
+                                </div>
+                                <div class="ingredient-hint">
+                                    💡 除外食材は使いませんが、その食材を使う料理を別の食材で代用した料理は提案されます<br>
+                                    （例：えび除外 → えびチリの代わりに鶏肉チリ）
                                 </div>
                                 <div class="ingredient-tags" id="exclude-ingredient-tags"></div>
                             </div>
@@ -1422,6 +1492,7 @@
         let currentDifficulty = '簡単';
         let currentTasteIntensity = '普通';
         let currentMenuType = '定食';
+        let currentStapleFood = '白米';
         let weekMenu = [];
         let excludeIngredients = [];
         let priorityIngredients = [];
@@ -1506,10 +1577,20 @@
             saveMainSettings();
         }
 
+        function setStapleFood(food) {
+            currentStapleFood = food;
+            document.querySelectorAll('.staple-toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            saveMainSettings();
+        }
+
         function saveMainSettings() {
             localStorage.setItem('tasteIntensity', currentTasteIntensity);
             localStorage.setItem('menuType', currentMenuType);
             localStorage.setItem('difficulty', currentDifficulty);
+            localStorage.setItem('stapleFood', currentStapleFood);
             localStorage.setItem('category', document.getElementById('category').value);
             localStorage.setItem('servings', document.getElementById('servings').value);
         }
@@ -1543,6 +1624,17 @@
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.classList.remove('active');
                     if (btn.textContent === savedDifficulty + 'に' || btn.textContent === savedDifficulty + 'って') {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            const savedStaple = localStorage.getItem('stapleFood');
+            if (savedStaple) {
+                currentStapleFood = savedStaple;
+                document.querySelectorAll('.staple-toggle-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent === savedStaple) {
                         btn.classList.add('active');
                     }
                 });
@@ -1762,6 +1854,7 @@
             
             const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
             const menuTypeBadge = menu.menuType ? `<span class="menu-type-badge">🍽️ ${menu.menuType}</span>` : '';
+            const stapleBadge = menu.stapleFood ? `<span class="staple-badge">🍚 ${menu.stapleFood}</span>` : '';
             
             const info = document.getElementById('favorite-detail-info');
             info.innerHTML = `
@@ -1772,6 +1865,7 @@
                 </span>
                 ${tasteBadge}
                 ${menuTypeBadge}
+                ${stapleBadge}
                 ${menu.healthNote ? `<span class="health-badge">💊 ${menu.healthNote}</span>` : ''}
             `;
 
@@ -1885,6 +1979,7 @@
                 
                 const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
                 const menuTypeBadge = menu.menuType ? `<span class="menu-type-badge">🍽️ ${menu.menuType}</span>` : '';
+                const stapleBadge = menu.stapleFood ? `<span class="staple-badge">🍚 ${menu.stapleFood}</span>` : '';
                 
                 let dishNames = '';
                 if (menu.menuType === '1品') {
@@ -1915,7 +2010,7 @@
                         </div>
 
                         <div style="font-size: 0.85em; color: #999;">
-                            ${caloriesPerPerson} kcal/人 (${menu.servings}人分) • ${menu.difficulty} ${tasteBadge} ${menuTypeBadge}
+                            ${caloriesPerPerson} kcal/人 (${menu.servings}人分) • ${menu.difficulty} ${tasteBadge} ${menuTypeBadge} ${stapleBadge}
                         </div>
 
                         ${favorite.tags.length > 0 ? `
@@ -2062,12 +2157,24 @@
             
             let constraints = '';
             
+            // 除外食材の指定を変更：別の食材で代用した料理はOK
             if (excludeIngredients.length > 0) {
-                constraints += `\n【重要】以下の食材は絶対に使わないでください: ${excludeIngredients.join('、')}`;
+                constraints += `\n【重要：除外食材】以下の食材は絶対に使わないでください: ${excludeIngredients.join('、')}`;
+                constraints += `\nただし、これらの食材を使う料理を別の食材で代用することは歓迎します。`;
+                constraints += `\n（例：えびを除外した場合 → えびチリの代わりに「鶏肉のチリソース炒め」や「イカのチリソース」など、似た調理法で別の食材を使った料理を提案してください）`;
             }
             
             if (priorityIngredients.length > 0) {
                 constraints += `\n【重要】以下の食材を優先的に使ってください: ${priorityIngredients.join('、')}`;
+            }
+
+            // 主食の指定を追加
+            if (currentStapleFood && currentStapleFood !== 'おまかせ') {
+                if (currentMenuType === '定食') {
+                    constraints += `\n【重要】主食は「${currentStapleFood}」にしてください。献立には主食（${currentStapleFood}）+ 主菜 + 副菜 + 汁物の組み合わせで提案してください。`;
+                } else {
+                    constraints += `\n【重要】主食は「${currentStapleFood}」にしてください。${currentStapleFood}を使った料理を提案してください。`;
+                }
             }
 
             let tasteInstruction = '';
@@ -2232,6 +2339,7 @@ ingredientsには調味料の具体的な量も含めてください。`;
                         menu.difficulty = currentDifficulty;
                         menu.tasteIntensity = currentTasteIntensity;
                         menu.menuType = currentMenuType;
+                        menu.stapleFood = currentStapleFood;
                         menu.category = document.getElementById('category').value;
                         menu.healthGoal = document.getElementById('health-goal').value;
                         
@@ -2316,6 +2424,7 @@ ingredientsには調味料の具体的な量も含めてください。`;
                                 difficulty: currentDifficulty,
                                 tasteIntensity: currentTasteIntensity,
                                 menuType: currentMenuType,
+                                stapleFood: currentStapleFood,
                                 category: category,
                                 healthGoal: healthGoal,
                                 totalCalories: totalCalories,
@@ -2362,6 +2471,7 @@ ingredientsには調味料の具体的な量も含めてください。`;
             
             const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
             const menuTypeBadge = menu.menuType ? `<span class="menu-type-badge">🍽️ ${menu.menuType}</span>` : '';
+            const stapleBadge = menu.stapleFood ? `<span class="staple-badge">🍚 ${menu.stapleFood}</span>` : '';
             
             const meta = document.getElementById('recipe-meta');
             meta.innerHTML = `
@@ -2369,6 +2479,7 @@ ingredientsには調味料の具体的な量も含めてください。`;
                 <span class="difficulty-badge difficulty-${currentDifficulty === '簡単' ? 'easy' : 'gourmet'}">${currentDifficulty}</span>
                 ${tasteBadge}
                 ${menuTypeBadge}
+                ${stapleBadge}
             `;
             
             const ingredientsList = document.getElementById('recipe-ingredients');
@@ -2426,6 +2537,7 @@ ingredientsには調味料の具体的な量も含めてください。`;
                 
                 const tasteBadge = day.tasteIntensity ? `<span class="taste-badge">🧂 ${day.tasteIntensity}</span>` : '';
                 const menuTypeBadge = day.menuType ? `<span class="menu-type-badge">🍽️ ${day.menuType}</span>` : '';
+                const stapleBadge = day.stapleFood ? `<span class="staple-badge">🍚 ${day.stapleFood}</span>` : '';
                 
                 let mealsHTML = '';
                 if (day.menuType === '1品') {
@@ -2484,6 +2596,7 @@ ingredientsには調味料の具体的な量も含めてください。`;
                             ${day.aiGenerated ? '<span class="ai-badge-small">AI</span>' : ''}
                             ${tasteBadge}
                             ${menuTypeBadge}
+                            ${stapleBadge}
                         </span>
                         <span class="day-total-calories">${caloriesPerPerson} kcal/人 (${day.servings}人分)</span>
                     </div>
@@ -2527,6 +2640,84 @@ ingredientsには調味料の具体的な量も含めてください。`;
             }, 100);
         }
 
+        // 食材名と量を分離する関数
+        function parseIngredient(ingredientStr) {
+            // 調味料リスト
+            const seasonings = [
+                '醤油', 'しょうゆ', '味噌', 'みそ', 'みりん', '酒', '料理酒', '日本酒', 
+                '塩', '砂糖', '酢', 'ごま油', 'サラダ油', 'オリーブオイル', '油', 
+                'バター', 'マヨネーズ', 'ケチャップ', 'ソース', 'ウスターソース',
+                'だし', '顆粒だし', '鶏ガラスープの素', 'コンソメ', 'ブイヨン', 
+                '片栗粉', '小麦粉', 'コショウ', '胡椒', 'こしょう', '七味', '唐辛子',
+                'にんにく（チューブ）', 'しょうが（チューブ）', '生姜（チューブ）',
+                'わさび', 'からし', '豆板醤', '甜麺醤', 'オイスターソース',
+                '鶏がらスープの素', 'だしの素', '本だし', 'めんつゆ', '白だし', '水'
+            ];
+            
+            // パターン1: 「材料名 (数量単位)」形式
+            const pattern1 = /^(.+?)\s*\((.+?)\)$/;
+            const match1 = ingredientStr.match(pattern1);
+            if (match1) {
+                const name = match1[1].trim();
+                const amountStr = match1[2].trim();
+                const { amount, unit } = extractAmountAndUnit(amountStr);
+                const isSeasoning = seasonings.some(s => name.includes(s));
+                return { name, amount, unit, isSeasoning, original: ingredientStr };
+            }
+            
+            // パターン2: 「材料名 大さじ1」形式
+            const pattern2 = /^(.+?)\s+(大さじ|小さじ)\s*(.+)$/;
+            const match2 = ingredientStr.match(pattern2);
+            if (match2) {
+                const name = match2[1].trim();
+                const unit = match2[2];
+                const amount = match2[3].trim();
+                const isSeasoning = seasonings.some(s => name.includes(s));
+                return { name, amount, unit, isSeasoning, original: ingredientStr };
+            }
+            
+            // パターン3: 「材料名 数値単位」形式
+            const pattern3 = /^(.+?)\s+(\d+(?:\.\d+)?(?:\/\d+)?(?:と\d+\/\d+)?)\s*(g|グラム|kg|ml|cc|L|個|本|枚|切れ|パック|缶|袋|玉|束|丁|片|かけ)?$/;
+            const match3 = ingredientStr.match(pattern3);
+            if (match3) {
+                const name = match3[1].trim();
+                const amount = match3[2];
+                const unit = match3[3] || '';
+                const isSeasoning = seasonings.some(s => name.includes(s));
+                return { name, amount, unit, isSeasoning, original: ingredientStr };
+            }
+            
+            // パターン4: 「材料名 少々」など
+            const pattern4 = /^(.+?)\s+(少々|適量|少量|ひとつまみ|小量)$/;
+            const match4 = ingredientStr.match(pattern4);
+            if (match4) {
+                const name = match4[1].trim();
+                const amount = match4[2];
+                const isSeasoning = seasonings.some(s => name.includes(s));
+                return { name, amount, unit: '', isSeasoning, original: ingredientStr };
+            }
+            
+            // マッチしない場合
+            const name = ingredientStr.trim();
+            const isSeasoning = seasonings.some(s => name.includes(s));
+            return { name, amount: '', unit: '', isSeasoning, original: ingredientStr };
+        }
+
+        function extractAmountAndUnit(amountStr) {
+            // 「300g」「大さじ1」などから数値と単位を抽出
+            const match = amountStr.match(/^(\d+(?:\.\d+)?(?:\/\d+)?(?:と\d+\/\d+)?)\s*(g|グラム|kg|ml|cc|L|個|本|枚|切れ|パック|缶|袋|玉|束|丁|片|かけ|大さじ|小さじ)?$/);
+            if (match) {
+                return { amount: match[1], unit: match[2] || '' };
+            }
+            
+            // 単位のみの場合
+            if (amountStr.match(/^(大さじ|小さじ|少々|適量|少量|ひとつまみ|小量)$/)) {
+                return { amount: amountStr, unit: '' };
+            }
+            
+            return { amount: amountStr, unit: '' };
+        }
+
         function generateShoppingList() {
             if (weekMenu.length === 0) {
                 alert('先に献立を作成してください！');
@@ -2540,40 +2731,87 @@ ingredientsには調味料の具体的な量も含めてください。`;
                 return;
             }
             
-            const allIngredients = {};
+            // 調味料リスト
+            const seasonings = [
+                '醤油', 'しょうゆ', '味噌', 'みそ', 'みりん', '酒', '料理酒', '日本酒', 
+                '塩', '砂糖', '酢', 'ごま油', 'サラダ油', 'オリーブオイル', '油', 
+                'バター', 'マヨネーズ', 'ケチャップ', 'ソース', 'ウスターソース',
+                'だし', '顆粒だし', '鶏ガラスープの素', 'コンソメ', 'ブイヨン', 
+                '片栗粉', '小麦粉', 'コショウ', '胡椒', 'こしょう', '七味', '唐辛子',
+                'にんにく（チューブ）', 'しょうが（チューブ）', '生姜（チューブ）',
+                'わさび', 'からし', '豆板醤', '甜麺醤', 'オイスターソース',
+                '鶏がらスープの素', 'だしの素', '本だし', 'めんつゆ', '白だし', '水'
+            ];
             
+            const ingredients = {};
+            const seasoningItems = {};
+            
+            // 材料を収集
             selectedMenus.forEach(day => {
-                let ingredients = [...day.main.ingredients];
+                let allDayIngredients = [...day.main.ingredients];
                 if (day.menuType !== '1品') {
-                    ingredients.push(...day.side.ingredients, ...day.soup.ingredients);
+                    allDayIngredients.push(...day.side.ingredients, ...day.soup.ingredients);
                 }
                 
-                ingredients.forEach(ingredient => {
-                    if (allIngredients[ingredient]) {
-                        allIngredients[ingredient]++;
-                    } else {
-                        allIngredients[ingredient] = 1;
+                allDayIngredients.forEach(item => {
+                    // 調味料かどうか判定
+                    const isSeasoning = seasonings.some(s => item.includes(s));
+                    const targetObj = isSeasoning ? seasoningItems : ingredients;
+                    
+                    if (!targetObj[item]) {
+                        targetObj[item] = 0;
                     }
+                    targetObj[item]++;
                 });
             });
             
             const shoppingListDiv = document.getElementById('shopping-list');
-            const ingredientsList = Object.entries(allIngredients)
-                .sort((a, b) => a[0].localeCompare(b[0], 'ja'));
             
-            shoppingListDiv.innerHTML = `
+            let html = `
                 <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
                     選択中: ${selectedMenus.length}日分の献立
                 </p>
-                <ul class="shopping-list">
-                    ${ingredientsList.map(([ingredient, count]) => `
-                        <li>
-                            <input type="checkbox" onchange="toggleItem(this)">
-                            <span>${ingredient} ${count > 1 ? '×' + count : ''}</span>
-                        </li>
-                    `).join('')}
-                </ul>
             `;
+            
+            // 食材セクション
+            if (Object.keys(ingredients).length > 0) {
+                html += `<h3>🥬 食材</h3><ul class="shopping-list">`;
+                
+                Object.entries(ingredients)
+                    .sort((a, b) => a[0].localeCompare(b[0], 'ja'))
+                    .forEach(([item, count]) => {
+                        const displayText = count > 1 ? `${item} ×${count}` : item;
+                        html += `
+                            <li>
+                                <input type="checkbox" onchange="toggleItem(this)">
+                                <span>${displayText}</span>
+                            </li>
+                        `;
+                    });
+                
+                html += `</ul>`;
+            }
+            
+            // 調味料セクション
+            if (Object.keys(seasoningItems).length > 0) {
+                html += `<h3 class="seasoning-header">🧂 調味料</h3><ul class="shopping-list">`;
+                
+                Object.entries(seasoningItems)
+                    .sort((a, b) => a[0].localeCompare(b[0], 'ja'))
+                    .forEach(([item, count]) => {
+                        const displayText = count > 1 ? `${item} ×${count}` : item;
+                        html += `
+                            <li>
+                                <input type="checkbox" onchange="toggleItem(this)">
+                                <span>${displayText}</span>
+                            </li>
+                        `;
+                    });
+                
+                html += `</ul>`;
+            }
+            
+            shoppingListDiv.innerHTML = html;
         }
 
         function toggleItem(checkbox) {
