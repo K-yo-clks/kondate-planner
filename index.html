@@ -61,6 +61,64 @@
             margin-bottom: 20px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
         }
+
+        .accordion-section {
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: #333;
+            transition: 0.3s;
+            user-select: none;
+        }
+
+        .accordion-header:hover {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+
+        .accordion-header.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .accordion-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+
+        .accordion-header.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: white;
+        }
+
+        .accordion-content.active {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .accordion-body {
+            padding: 20px;
+        }
+
+        .main-settings {
+            margin-bottom: 20px;
+        }
         
         .control-row {
             display: flex;
@@ -118,7 +176,6 @@
             color: white;
         }
 
-        /* 🆕 味の濃さボタン用 */
         .taste-toggle-btn {
             flex: 1;
             padding: 12px;
@@ -134,6 +191,24 @@
         
         .taste-toggle-btn.active {
             background: #ff8c00;
+            color: white;
+        }
+
+        .menu-type-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #9333ea;
+            background: white;
+            color: #9333ea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+        
+        .menu-type-btn.active {
+            background: #9333ea;
             color: white;
         }
 
@@ -498,9 +573,17 @@
             text-align: center;
         }
 
-        /* 🆕 味の濃さバッジ */
         .taste-badge {
             background: #ff8c00;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+        .menu-type-badge {
+            background: #9333ea;
             color: white;
             padding: 3px 8px;
             border-radius: 12px;
@@ -520,6 +603,11 @@
         .day-card.ai-generated {
             border-left-color: #4285f4;
             background: linear-gradient(to right, #e3f2fd 0%, #f8f9fa 100%);
+        }
+
+        .day-card.single-dish {
+            border-left-color: #9333ea;
+            background: linear-gradient(to right, #f3e8ff 0%, #f8f9fa 100%);
         }
 
         .nutrition-chart-container {
@@ -634,6 +722,12 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
+
+        .meal.single-dish-large {
+            padding: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #f3e8ff 100%);
+            border: 2px solid #9333ea;
+        }
         
         .meal-type {
             font-weight: bold;
@@ -645,6 +739,11 @@
         .meal-name {
             font-size: 1.1em;
             margin-bottom: 5px;
+        }
+
+        .meal.single-dish-large .meal-name {
+            font-size: 1.5em;
+            color: #9333ea;
         }
         
         .meal-info {
@@ -773,7 +872,6 @@
             text-decoration: underline;
         }
 
-        /* レシピモーダル */
         .recipe-modal {
             display: none;
             position: fixed;
@@ -912,7 +1010,6 @@
             color: #666;
         }
 
-        /* お気に入り編集モーダル */
         .favorite-edit-modal {
             display: none;
             position: fixed;
@@ -964,7 +1061,6 @@
             flex: 1;
         }
 
-        /* お気に入り詳細モーダル */
         .favorite-detail-modal {
             display: none;
             position: fixed;
@@ -1063,106 +1159,142 @@
         </header>
 
         <div class="controls">
-            <div class="ai-settings">
-                <label>
-                    🔑 Google Gemini APIキー 
-                    <span class="api-status" id="api-status">未設定</span>
-                </label>
-                <div class="api-key-input">
+            <div class="main-settings">
+                <div class="control-row">
                     <div class="control-group">
-                        <input type="password" id="api-key" placeholder="AIza...">
+                        <label>🍚 料理ジャンル</label>
+                        <select id="category">
+                            <option value="all">おまかせ</option>
+                            <option value="和食">和食</option>
+                            <option value="洋食">洋食</option>
+                            <option value="中華">中華</option>
+                            <option value="エスニック">エスニック</option>
+                            <option value="韓国料理">韓国料理</option>
+                        </select>
                     </div>
-                    <button class="btn-secondary" onclick="saveApiKey()">保存</button>
-                </div>
-                <small style="color: #666;">
-                    ⚠️ APIキーは <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setup-link">Google AI Studio</a> で無料取得できます（クレカ不要！）
-                </small>
-            </div>
-
-            <div class="control-row">
-                <div class="control-group">
-                    <label>🍚 料理ジャンル</label>
-                    <select id="category">
-                        <option value="all">おまかせ</option>
-                        <option value="和食">和食</option>
-                        <option value="洋食">洋食</option>
-                        <option value="中華">中華</option>
-                        <option value="エスニック">エスニック</option>
-                        <option value="韓国料理">韓国料理</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label>👨‍👩‍👧 人数</label>
-                    <input type="number" id="servings" min="1" max="10" value="2">
-                </div>
-                
-                <div class="control-group">
-                    <label>⚡ 調理スタイル</label>
-                    <div class="toggle-buttons">
-                        <button class="toggle-btn active" onclick="setDifficulty('簡単')">簡単に</button>
-                        <button class="toggle-btn" onclick="setDifficulty('こだわり')">こだわって</button>
+                    
+                    <div class="control-group">
+                        <label>👨‍👩‍👧 人数</label>
+                        <input type="number" id="servings" min="1" max="10" value="2">
                     </div>
                 </div>
-            </div>
 
-            <!-- 🆕 味の濃さ設定 -->
-            <div class="control-row">
-                <div class="control-group">
-                    <label>🧂 味の濃さ（調味料の量）</label>
-                    <div class="toggle-buttons">
-                        <button class="taste-toggle-btn" onclick="setTasteIntensity('薄め')">薄め</button>
-                        <button class="taste-toggle-btn active" onclick="setTasteIntensity('普通')">普通</button>
-                        <button class="taste-toggle-btn" onclick="setTasteIntensity('濃いめ')">濃いめ</button>
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>⚡ 調理スタイル</label>
+                        <div class="toggle-buttons">
+                            <button class="toggle-btn active" onclick="setDifficulty('簡単')">簡単に</button>
+                            <button class="toggle-btn" onclick="setDifficulty('こだわり')">こだわって</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>🧂 味の濃さ</label>
+                        <div class="toggle-buttons">
+                            <button class="taste-toggle-btn" onclick="setTasteIntensity('薄め')">薄め</button>
+                            <button class="taste-toggle-btn active" onclick="setTasteIntensity('普通')">普通</button>
+                            <button class="taste-toggle-btn" onclick="setTasteIntensity('濃いめ')">濃いめ</button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="health-section">
-                <label>🏥 健康目標・栄養バランス</label>
-                <div class="control-group" style="margin-bottom: 10px;">
-                    <select id="health-goal">
-                        <option value="none">特になし</option>
-                        <option value="diabetes">糖尿病予防（低GI・低糖質）</option>
-                        <option value="weight-loss">減量・ダイエット（低カロリー）</option>
-                        <option value="weight-gain">増量・筋肉増強（高カロリー・高タンパク）</option>
-                        <option value="high-protein">高タンパク質</option>
-                        <option value="low-carb">低糖質（ロカボ）</option>
-                        <option value="low-salt">減塩</option>
-                        <option value="high-fiber">食物繊維豊富</option>
-                        <option value="iron-rich">鉄分豊富（貧血予防）</option>
-                        <option value="calcium-rich">カルシウム豊富（骨強化）</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label>📝 その他の要望・備考（自由記述）</label>
-                    <textarea id="health-notes" placeholder="例：&#10;- 腎臓に優しいメニューにしてほしい&#10;- ビタミンCを多めに摂りたい&#10;- 消化に良いものがいい&#10;- コレステロールを気にしている"></textarea>
-                    <div class="health-examples">
-                        💡 入力例：「妊娠中なので葉酸を多めに」「アスリート向けの栄養バランス」「高齢者向けに柔らかい食材で」など
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>🍽️ 献立タイプ</label>
+                        <div class="toggle-buttons">
+                            <button class="menu-type-btn active" onclick="setMenuType('定食')">定食スタイル<br><small>（主菜+副菜+汁物）</small></button>
+                            <button class="menu-type-btn" onclick="setMenuType('1品')">1品もの<br><small>（丼・麺類など）</small></button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="ingredient-section">
-                <label>🥬 食材設定</label>
-                
-                <div class="ingredient-mode-section">
-                    <h4>🚫 除外食材（これは使わない）</h4>
-                    <div class="ingredient-input">
-                        <input type="text" id="exclude-ingredient-input" placeholder="例: えび、ナッツ、セロリ（複数可、カンマ区切り）">
-                        <button class="btn-add" onclick="addIngredient('exclude')">追加</button>
-                    </div>
-                    <div class="ingredient-tags" id="exclude-ingredient-tags"></div>
+            <div class="accordion-section">
+                <div class="accordion-header" onclick="toggleAccordion('api')">
+                    <span>🔑 APIキー設定 <span class="api-status" id="api-status">未設定</span></span>
+                    <span class="accordion-icon">▼</span>
                 </div>
-
-                <div class="ingredient-mode-section">
-                    <h4>⭐ 優先食材（これを優先的に使う）</h4>
-                    <div class="ingredient-input">
-                        <input type="text" id="priority-ingredient-input" placeholder="例: 鶏肉、キャベツ、トマト（複数可、カンマ区切り）">
-                        <button class="btn-add" onclick="addIngredient('priority')">追加</button>
+                <div class="accordion-content" id="accordion-api">
+                    <div class="accordion-body">
+                        <div class="ai-settings">
+                            <label>Google Gemini APIキー</label>
+                            <div class="api-key-input">
+                                <div class="control-group">
+                                    <input type="password" id="api-key" placeholder="AIza...">
+                                </div>
+                                <button class="btn-secondary" onclick="saveApiKey()">保存</button>
+                            </div>
+                            <small style="color: #666;">
+                                ⚠️ APIキーは <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setup-link">Google AI Studio</a> で無料取得できます（クレカ不要！）
+                            </small>
+                        </div>
                     </div>
-                    <div class="ingredient-tags" id="priority-ingredient-tags"></div>
+                </div>
+            </div>
+
+            <div class="accordion-section">
+                <div class="accordion-header" onclick="toggleAccordion('ingredients')">
+                    <span>🥬 食材設定（除外・優先）</span>
+                    <span class="accordion-icon">▼</span>
+                </div>
+                <div class="accordion-content" id="accordion-ingredients">
+                    <div class="accordion-body">
+                        <div class="ingredient-section">
+                            <div class="ingredient-mode-section">
+                                <h4>🚫 除外食材（これは使わない）</h4>
+                                <div class="ingredient-input">
+                                    <input type="text" id="exclude-ingredient-input" placeholder="例: えび、ナッツ、セロリ（複数可、カンマ区切り）">
+                                    <button class="btn-add" onclick="addIngredient('exclude')">追加</button>
+                                </div>
+                                <div class="ingredient-tags" id="exclude-ingredient-tags"></div>
+                            </div>
+
+                            <div class="ingredient-mode-section">
+                                <h4>⭐ 優先食材（これを優先的に使う）</h4>
+                                <div class="ingredient-input">
+                                    <input type="text" id="priority-ingredient-input" placeholder="例: 鶏肉、キャベツ、トマト（複数可、カンマ区切り）">
+                                    <button class="btn-add" onclick="addIngredient('priority')">追加</button>
+                                </div>
+                                <div class="ingredient-tags" id="priority-ingredient-tags"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-section">
+                <div class="accordion-header" onclick="toggleAccordion('health')">
+                    <span>🏥 健康目標・栄養バランス</span>
+                    <span class="accordion-icon">▼</span>
+                </div>
+                <div class="accordion-content" id="accordion-health">
+                    <div class="accordion-body">
+                        <div class="health-section">
+                            <div class="control-group" style="margin-bottom: 10px;">
+                                <label>健康目標</label>
+                                <select id="health-goal">
+                                    <option value="none">特になし</option>
+                                    <option value="diabetes">糖尿病予防（低GI・低糖質）</option>
+                                    <option value="weight-loss">減量・ダイエット（低カロリー）</option>
+                                    <option value="weight-gain">増量・筋肉増強（高カロリー・高タンパク）</option>
+                                    <option value="high-protein">高タンパク質</option>
+                                    <option value="low-carb">低糖質（ロカボ）</option>
+                                    <option value="low-salt">減塩</option>
+                                    <option value="high-fiber">食物繊維豊富</option>
+                                    <option value="iron-rich">鉄分豊富（貧血予防）</option>
+                                    <option value="calcium-rich">カルシウム豊富（骨強化）</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label>📝 その他の要望・備考（自由記述）</label>
+                                <textarea id="health-notes" placeholder="例：&#10;- 腎臓に優しいメニューにしてほしい&#10;- ビタミンCを多めに摂りたい&#10;- 消化に良いものがいい&#10;- コレステロールを気にしている"></textarea>
+                                <div class="health-examples">
+                                    💡 入力例：「妊娠中なので葉酸を多めに」「アスリート向けの栄養バランス」「高齢者向けに柔らかい食材で」など
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -1222,7 +1354,6 @@
         </div>
     </div>
 
-    <!-- レシピモーダル -->
     <div class="recipe-modal" id="recipe-modal" onclick="closeRecipeModal(event)">
         <div class="recipe-content" onclick="event.stopPropagation()">
             <button class="recipe-close" onclick="closeRecipeModal()">×</button>
@@ -1248,7 +1379,6 @@
         </div>
     </div>
 
-    <!-- お気に入り編集モーダル -->
     <div class="favorite-edit-modal" id="favorite-edit-modal">
         <div class="favorite-edit-content">
             <h3>⭐ お気に入り編集</h3>
@@ -1270,7 +1400,6 @@
         </div>
     </div>
 
-    <!-- お気に入り詳細モーダル -->
     <div class="favorite-detail-modal" id="favorite-detail-modal" onclick="closeFavoriteDetailModal(event)">
         <div class="favorite-detail-content" onclick="event.stopPropagation()">
             <button class="favorite-detail-close" onclick="closeFavoriteDetailModal()">×</button>
@@ -1291,7 +1420,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script>
         let currentDifficulty = '簡単';
-        let currentTasteIntensity = '普通'; // 🆕 味の濃さ
+        let currentTasteIntensity = '普通';
+        let currentMenuType = '定食';
         let weekMenu = [];
         let excludeIngredients = [];
         let priorityIngredients = [];
@@ -1300,6 +1430,14 @@
         let editingFavoriteId = null;
         let apiKey = '';
         let nutritionCharts = {};
+
+        function toggleAccordion(section) {
+            const content = document.getElementById(`accordion-${section}`);
+            const header = content.previousElementSibling;
+            
+            content.classList.toggle('active');
+            header.classList.toggle('active');
+        }
 
         function saveApiKey() {
             const key = document.getElementById('api-key').value.trim();
@@ -1347,35 +1485,77 @@
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
-            saveTasteSettings(); // 🆕
+            saveMainSettings();
         }
 
-        // 🆕 味の濃さ設定
         function setTasteIntensity(intensity) {
             currentTasteIntensity = intensity;
             document.querySelectorAll('.taste-toggle-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
-            saveTasteSettings();
+            saveMainSettings();
         }
 
-        // 🆕 味の濃さ設定を保存
-        function saveTasteSettings() {
+        function setMenuType(type) {
+            currentMenuType = type;
+            document.querySelectorAll('.menu-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            saveMainSettings();
+        }
+
+        function saveMainSettings() {
             localStorage.setItem('tasteIntensity', currentTasteIntensity);
+            localStorage.setItem('menuType', currentMenuType);
+            localStorage.setItem('difficulty', currentDifficulty);
+            localStorage.setItem('category', document.getElementById('category').value);
+            localStorage.setItem('servings', document.getElementById('servings').value);
         }
 
-        // 🆕 味の濃さ設定を読み込み
-        function loadTasteSettings() {
-            const saved = localStorage.getItem('tasteIntensity');
-            if (saved) {
-                currentTasteIntensity = saved;
+        function loadMainSettings() {
+            const savedTaste = localStorage.getItem('tasteIntensity');
+            if (savedTaste) {
+                currentTasteIntensity = savedTaste;
                 document.querySelectorAll('.taste-toggle-btn').forEach(btn => {
                     btn.classList.remove('active');
-                    if (btn.textContent === saved) {
+                    if (btn.textContent.includes(savedTaste)) {
                         btn.classList.add('active');
                     }
                 });
+            }
+
+            const savedType = localStorage.getItem('menuType');
+            if (savedType) {
+                currentMenuType = savedType;
+                document.querySelectorAll('.menu-type-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent.includes(savedType)) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            const savedDifficulty = localStorage.getItem('difficulty');
+            if (savedDifficulty) {
+                currentDifficulty = savedDifficulty;
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent === savedDifficulty + 'に' || btn.textContent === savedDifficulty + 'って') {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            const savedCategory = localStorage.getItem('category');
+            if (savedCategory) {
+                document.getElementById('category').value = savedCategory;
+            }
+
+            const savedServings = localStorage.getItem('servings');
+            if (savedServings) {
+                document.getElementById('servings').value = savedServings;
             }
         }
 
@@ -1580,8 +1760,8 @@
             
             const caloriesPerPerson = Math.round(menu.totalCalories / menu.servings);
             
-            // 🆕 味の濃さバッジ表示
             const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
+            const menuTypeBadge = menu.menuType ? `<span class="menu-type-badge">🍽️ ${menu.menuType}</span>` : '';
             
             const info = document.getElementById('favorite-detail-info');
             info.innerHTML = `
@@ -1591,6 +1771,7 @@
                     ${menu.difficulty}
                 </span>
                 ${tasteBadge}
+                ${menuTypeBadge}
                 ${menu.healthNote ? `<span class="health-badge">💊 ${menu.healthNote}</span>` : ''}
             `;
 
@@ -1604,46 +1785,64 @@
             }
 
             const dishesContainer = document.getElementById('favorite-detail-dishes');
-            dishesContainer.innerHTML = `
-                <div class="meal-detail-card">
-                    <h3 style="color: #667eea; margin-bottom: 10px;">🍖 主菜: ${menu.main.name}</h3>
-                    <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.main.calories} kcal/人</span></p>
-                    <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
-                    <ul class="recipe-ingredients">
-                        ${menu.main.ingredients.map(ing => `<li>${ing}</li>`).join('')}
-                    </ul>
-                    <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
-                    <ol class="recipe-steps">
-                        ${menu.main.steps.map(step => `<li>${step}</li>`).join('')}
-                    </ol>
-                </div>
+            
+            if (menu.menuType === '1品') {
+                dishesContainer.innerHTML = `
+                    <div class="meal-detail-card">
+                        <h3 style="color: #9333ea; margin-bottom: 10px;">🍜 ${menu.main.name}</h3>
+                        <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.main.calories} kcal/人</span></p>
+                        <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
+                        <ul class="recipe-ingredients">
+                            ${menu.main.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                        </ul>
+                        <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
+                        <ol class="recipe-steps">
+                            ${menu.main.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
+                `;
+            } else {
+                dishesContainer.innerHTML = `
+                    <div class="meal-detail-card">
+                        <h3 style="color: #667eea; margin-bottom: 10px;">🍖 主菜: ${menu.main.name}</h3>
+                        <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.main.calories} kcal/人</span></p>
+                        <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
+                        <ul class="recipe-ingredients">
+                            ${menu.main.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                        </ul>
+                        <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
+                        <ol class="recipe-steps">
+                            ${menu.main.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
 
-                <div class="meal-detail-card">
-                    <h3 style="color: #667eea; margin-bottom: 10px;">🥗 副菜: ${menu.side.name}</h3>
-                    <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.side.calories} kcal/人</span></p>
-                    <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
-                    <ul class="recipe-ingredients">
-                        ${menu.side.ingredients.map(ing => `<li>${ing}</li>`).join('')}
-                    </ul>
-                    <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
-                    <ol class="recipe-steps">
-                        ${menu.side.steps.map(step => `<li>${step}</li>`).join('')}
-                    </ol>
-                </div>
+                    <div class="meal-detail-card">
+                        <h3 style="color: #667eea; margin-bottom: 10px;">🥗 副菜: ${menu.side.name}</h3>
+                        <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.side.calories} kcal/人</span></p>
+                        <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
+                        <ul class="recipe-ingredients">
+                            ${menu.side.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                        </ul>
+                        <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
+                        <ol class="recipe-steps">
+                            ${menu.side.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
 
-                <div class="meal-detail-card">
-                    <h3 style="color: #667eea; margin-bottom: 10px;">🍵 汁物: ${menu.soup.name}</h3>
-                    <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.soup.calories} kcal/人</span></p>
-                    <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
-                    <ul class="recipe-ingredients">
-                        ${menu.soup.ingredients.map(ing => `<li>${ing}</li>`).join('')}
-                    </ul>
-                    <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
-                    <ol class="recipe-steps">
-                        ${menu.soup.steps.map(step => `<li>${step}</li>`).join('')}
-                    </ol>
-                </div>
-            `;
+                    <div class="meal-detail-card">
+                        <h3 style="color: #667eea; margin-bottom: 10px;">🍵 汁物: ${menu.soup.name}</h3>
+                        <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.soup.calories} kcal/人</span></p>
+                        <h4 style="margin-top: 15px; margin-bottom: 5px;">材料：</h4>
+                        <ul class="recipe-ingredients">
+                            ${menu.soup.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                        </ul>
+                        <h4 style="margin-top: 15px; margin-bottom: 5px;">作り方：</h4>
+                        <ol class="recipe-steps">
+                            ${menu.soup.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
+                `;
+            }
 
             modal.classList.add('show');
         }
@@ -1684,8 +1883,15 @@
                 const menu = favorite.menu;
                 const caloriesPerPerson = Math.round(menu.totalCalories / menu.servings);
                 
-                // 🆕 味の濃さバッジ表示
                 const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
+                const menuTypeBadge = menu.menuType ? `<span class="menu-type-badge">🍽️ ${menu.menuType}</span>` : '';
+                
+                let dishNames = '';
+                if (menu.menuType === '1品') {
+                    dishNames = menu.main.name;
+                } else {
+                    dishNames = `${menu.main.name} / ${menu.side.name} / ${menu.soup.name}`;
+                }
                 
                 return `
                     <div class="favorite-card" data-id="${favorite.id}" onclick="showFavoriteDetail(${favorite.id})">
@@ -1705,11 +1911,11 @@
                         </div>
 
                         <div style="font-size: 0.9em; color: #666; margin-bottom: 8px;">
-                            ${menu.main.name} / ${menu.side.name} / ${menu.soup.name}
+                            ${dishNames}
                         </div>
 
                         <div style="font-size: 0.85em; color: #999;">
-                            ${caloriesPerPerson} kcal/人 (${menu.servings}人分) • ${menu.difficulty} ${tasteBadge}
+                            ${caloriesPerPerson} kcal/人 (${menu.servings}人分) • ${menu.difficulty} ${tasteBadge} ${menuTypeBadge}
                         </div>
 
                         ${favorite.tags.length > 0 ? `
@@ -1864,12 +2070,11 @@
                 constraints += `\n【重要】以下の食材を優先的に使ってください: ${priorityIngredients.join('、')}`;
             }
 
-            // 🆕 味の濃さに関する指示を追加
             let tasteInstruction = '';
             if (currentTasteIntensity === '薄め') {
                 tasteInstruction = '\n【重要】味付けは「薄め」にしてください。調味料（醤油、塩、味噌、砂糖など）の量を通常の70%程度に減らしてください。材料欄には具体的な調味料の量（例：醤油 大さじ1→小さじ2）を明記してください。';
             } else if (currentTasteIntensity === '濃いめ') {
-                tasteInstruction = '\n【重要】味付けは「濃いめ」にしてください。調味料（醤油、塩、味噌、砂糖など）の量を通常の150%程度に増やしてください。材料欄には具体的な調味料の量（例：醤油 大さじ1→大さじ1と1/3）を明記してください。';
+                tasteInstruction = '\n【重要】味付けは「濃いめ」にしてください。調味料（醤油、塩、味噌、砂糖など）の量を通常の150%程度に増やしてください。材料欄には具体的な調味料の量（例：醤油 大さじ1→大さじ1と1/2）を明記してください。';
             } else {
                 tasteInstruction = '\n【重要】味付けは「普通」にしてください。調味料の量は一般的な標準的な量を使用してください。材料欄には具体的な調味料の量（例：醤油 大さじ1）を明記してください。';
             }
@@ -1898,7 +2103,45 @@
             const categoryText = category === 'all' ? 'ジャンルは自由' : `${category}中心`;
             const difficultyText = currentDifficulty === '簡単' ? '調理時間30分以内の簡単な料理' : '本格的な料理';
 
-            return `${dayCount}日分の夕食献立を考えてください。各料理には詳細な作り方と栄養素バランスも含めてください。
+            if (currentMenuType === '1品') {
+                return `${dayCount}日分の1品料理（丼もの、麺類、カレー、シチューなど）を考えてください。各料理には詳細な作り方と栄養素バランスも含めてください。
+
+条件：
+- ${categoryText}
+- ${difficultyText}
+- ${servings}人分
+- 1品で完結する料理（丼、麺類、カレー、リゾット、パスタなど）
+${constraints}
+
+以下のJSON形式で返してください（マークダウンのコードブロックは使わず、純粋なJSONのみ）：
+
+{
+  "menus": [
+    {
+      "dayNumber": 1,
+      "healthNote": "この料理の健康面でのポイント（簡潔に）",
+      "nutrition": {
+        "carbohydrate": 50,
+        "protein": 70,
+        "fat": 40,
+        "vitamin": 80,
+        "mineral": 60
+      },
+      "main": {
+        "name": "料理名",
+        "calories": 数値,
+        "ingredients": ["材料1 (量)", "材料2 (量)", "醤油 大さじ1"],
+        "steps": ["手順1", "手順2", "手順3"]
+      }
+    }
+  ]
+}
+
+nutritionの各値は0-100のスケールで、料理全体の栄養バランスを評価してください。
+caloriesは1人分のカロリーを指定してください。
+ingredientsには調味料の具体的な量も含めてください。`;
+            } else {
+                return `${dayCount}日分の夕食献立を考えてください。主菜、副菜、汁物の3品構成です。各料理には詳細な作り方と栄養素バランスも含めてください。
 
 条件：
 - ${categoryText}
@@ -1943,14 +2186,9 @@ ${constraints}
 }
 
 nutritionの各値は0-100のスケールで、献立全体の栄養バランスを評価してください。
-- carbohydrate: 炭水化物の充実度
-- protein: タンパク質の充実度
-- fat: 脂質の適切さ
-- vitamin: ビタミン類の豊富さ
-- mineral: ミネラル類の豊富さ
-
 caloriesは1人分のカロリーを指定してください。
-ingredientsには調味料の具体的な量も含めてください（例：「醤油 大さじ1」「塩 小さじ1/2」）。`;
+ingredientsには調味料の具体的な量も含めてください。`;
+            }
         }
 
         async function generateAIDayMenu() {
@@ -1992,12 +2230,19 @@ ingredientsには調味料の具体的な量も含めてください（例：「
                         menu.dayNumber = nextDayNumber;
                         menu.servings = parseInt(document.getElementById('servings').value);
                         menu.difficulty = currentDifficulty;
-                        menu.tasteIntensity = currentTasteIntensity; // 🆕 味の濃さを保存
+                        menu.tasteIntensity = currentTasteIntensity;
+                        menu.menuType = currentMenuType;
                         menu.category = document.getElementById('category').value;
                         menu.healthGoal = document.getElementById('health-goal').value;
-                        menu.totalCalories = Math.round(
-                            (menu.main.calories + menu.side.calories + menu.soup.calories) * menu.servings
-                        );
+                        
+                        if (currentMenuType === '1品') {
+                            menu.totalCalories = Math.round(menu.main.calories * menu.servings);
+                        } else {
+                            menu.totalCalories = Math.round(
+                                (menu.main.calories + menu.side.calories + menu.soup.calories) * menu.servings
+                            );
+                        }
+                        
                         menu.aiGenerated = true;
                         menu.selected = true;
                         
@@ -2054,20 +2299,30 @@ ingredientsには調味料の具体的な量も含めてください（例：「
                         const category = document.getElementById('category').value;
                         const healthGoal = document.getElementById('health-goal').value;
                         
-                        weekMenu = data.menus.map((menu, index) => ({
-                            ...menu,
-                            dayNumber: index + 1,
-                            servings: servings,
-                            difficulty: currentDifficulty,
-                            tasteIntensity: currentTasteIntensity, // 🆕 味の濃さを保存
-                            category: category,
-                            healthGoal: healthGoal,
-                            totalCalories: Math.round(
-                                (menu.main.calories + menu.side.calories + menu.soup.calories) * servings
-                            ),
-                            aiGenerated: true,
-                            selected: true
-                        }));
+                        weekMenu = data.menus.map((menu, index) => {
+                            let totalCalories;
+                            if (currentMenuType === '1品') {
+                                totalCalories = Math.round(menu.main.calories * servings);
+                            } else {
+                                totalCalories = Math.round(
+                                    (menu.main.calories + menu.side.calories + menu.soup.calories) * servings
+                                );
+                            }
+                            
+                            return {
+                                ...menu,
+                                dayNumber: index + 1,
+                                servings: servings,
+                                difficulty: currentDifficulty,
+                                tasteIntensity: currentTasteIntensity,
+                                menuType: currentMenuType,
+                                category: category,
+                                healthGoal: healthGoal,
+                                totalCalories: totalCalories,
+                                aiGenerated: true,
+                                selected: true
+                            };
+                        });
                         
                         saveToLocalStorage();
                         renderCalendar();
@@ -2105,14 +2360,15 @@ ingredientsには調味料の具体的な量も含めてください（例：「
             
             document.getElementById('recipe-title').textContent = dish.name;
             
-            // 🆕 味の濃さバッジ表示
             const tasteBadge = menu.tasteIntensity ? `<span class="taste-badge">🧂 ${menu.tasteIntensity}</span>` : '';
+            const menuTypeBadge = menu.menuType ? `<span class="menu-type-badge">🍽️ ${menu.menuType}</span>` : '';
             
             const meta = document.getElementById('recipe-meta');
             meta.innerHTML = `
                 <span class="calorie-badge">${dish.calories} kcal/人</span>
                 <span class="difficulty-badge difficulty-${currentDifficulty === '簡単' ? 'easy' : 'gourmet'}">${currentDifficulty}</span>
                 ${tasteBadge}
+                ${menuTypeBadge}
             `;
             
             const ingredientsList = document.getElementById('recipe-ingredients');
@@ -2168,16 +2424,66 @@ ingredientsには調味料の具体的な量も含めてください（例：「
             calendar.innerHTML = weekMenu.map((day, dayIndex) => {
                 const caloriesPerPerson = Math.round(day.totalCalories / day.servings);
                 
-                // 🆕 味の濃さバッジ表示
                 const tasteBadge = day.tasteIntensity ? `<span class="taste-badge">🧂 ${day.tasteIntensity}</span>` : '';
+                const menuTypeBadge = day.menuType ? `<span class="menu-type-badge">🍽️ ${day.menuType}</span>` : '';
+                
+                let mealsHTML = '';
+                if (day.menuType === '1品') {
+                    mealsHTML = `
+                        <div class="meal single-dish-large" onclick="showRecipeModal(weekMenu[${dayIndex}].main, 'main', ${dayIndex})">
+                            <div class="meal-type">🍜 1品料理</div>
+                            <div class="meal-name">${day.main.name}</div>
+                            <div class="meal-info">
+                                <span class="calorie-badge">${day.main.calories} kcal/人</span>
+                                <span class="difficulty-badge difficulty-${day.difficulty === '簡単' ? 'easy' : 'gourmet'}">
+                                    ${day.difficulty}
+                                </span>
+                            </div>
+                            <div class="click-hint">👆 クリックで作り方を表示</div>
+                        </div>
+                    `;
+                } else {
+                    mealsHTML = `
+                        <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].main, 'main', ${dayIndex})">
+                            <div class="meal-type">🍖 主菜</div>
+                            <div class="meal-name">${day.main.name}</div>
+                            <div class="meal-info">
+                                <span class="calorie-badge">${day.main.calories} kcal/人</span>
+                                <span class="difficulty-badge difficulty-${day.difficulty === '簡単' ? 'easy' : 'gourmet'}">
+                                    ${day.difficulty}
+                                </span>
+                            </div>
+                            <div class="click-hint">👆 クリックで作り方を表示</div>
+                        </div>
+                        
+                        <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].side, 'side', ${dayIndex})">
+                            <div class="meal-type">🥗 副菜</div>
+                            <div class="meal-name">${day.side.name}</div>
+                            <div class="meal-info">
+                                <span class="calorie-badge">${day.side.calories} kcal/人</span>
+                            </div>
+                            <div class="click-hint">👆 クリックで作り方を表示</div>
+                        </div>
+                        
+                        <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].soup, 'soup', ${dayIndex})">
+                            <div class="meal-type">🍵 汁物</div>
+                            <div class="meal-name">${day.soup.name}</div>
+                            <div class="meal-info">
+                                <span class="calorie-badge">${day.soup.calories} kcal/人</span>
+                            </div>
+                            <div class="click-hint">👆 クリックで作り方を表示</div>
+                        </div>
+                    `;
+                }
                 
                 return `
-                <div class="day-card ${day.aiGenerated ? 'ai-generated' : ''}">
+                <div class="day-card ${day.aiGenerated ? 'ai-generated' : ''} ${day.menuType === '1品' ? 'single-dish' : ''}">
                     <div class="day-header">
                         <span class="day-name">
                             ${day.dayNumber}日目
                             ${day.aiGenerated ? '<span class="ai-badge-small">AI</span>' : ''}
                             ${tasteBadge}
+                            ${menuTypeBadge}
                         </span>
                         <span class="day-total-calories">${caloriesPerPerson} kcal/人 (${day.servings}人分)</span>
                     </div>
@@ -2195,35 +2501,7 @@ ingredientsには調味料の具体的な量も含めてください（例：「
                         </div>
                     ` : ''}
                     
-                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].main, 'main', ${dayIndex})">
-                        <div class="meal-type">🍖 主菜</div>
-                        <div class="meal-name">${day.main.name}</div>
-                        <div class="meal-info">
-                            <span class="calorie-badge">${day.main.calories} kcal/人</span>
-                            <span class="difficulty-badge difficulty-${day.difficulty === '簡単' ? 'easy' : 'gourmet'}">
-                                ${day.difficulty}
-                            </span>
-                        </div>
-                        <div class="click-hint">👆 クリックで作り方を表示</div>
-                    </div>
-                    
-                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].side, 'side', ${dayIndex})">
-                        <div class="meal-type">🥗 副菜</div>
-                        <div class="meal-name">${day.side.name}</div>
-                        <div class="meal-info">
-                            <span class="calorie-badge">${day.side.calories} kcal/人</span>
-                        </div>
-                        <div class="click-hint">👆 クリックで作り方を表示</div>
-                    </div>
-                    
-                    <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].soup, 'soup', ${dayIndex})">
-                        <div class="meal-type">🍵 汁物</div>
-                        <div class="meal-name">${day.soup.name}</div>
-                        <div class="meal-info">
-                            <span class="calorie-badge">${day.soup.calories} kcal/人</span>
-                        </div>
-                        <div class="click-hint">👆 クリックで作り方を表示</div>
-                    </div>
+                    ${mealsHTML}
 
                     <div class="day-controls">
                         <input type="checkbox" class="day-checkbox" 
@@ -2265,7 +2543,12 @@ ingredientsには調味料の具体的な量も含めてください（例：「
             const allIngredients = {};
             
             selectedMenus.forEach(day => {
-                [...day.main.ingredients, ...day.side.ingredients, ...day.soup.ingredients].forEach(ingredient => {
+                let ingredients = [...day.main.ingredients];
+                if (day.menuType !== '1品') {
+                    ingredients.push(...day.side.ingredients, ...day.soup.ingredients);
+                }
+                
+                ingredients.forEach(ingredient => {
                     if (allIngredients[ingredient]) {
                         allIngredients[ingredient]++;
                     } else {
@@ -2395,6 +2678,8 @@ ingredientsには調味料の具体的な量も含めてください（例：「
                 });
             }
 
+            document.getElementById('category').addEventListener('change', saveMainSettings);
+            document.getElementById('servings').addEventListener('change', saveMainSettings);
             document.getElementById('health-goal').addEventListener('change', saveHealthSettings);
             document.getElementById('health-notes').addEventListener('blur', saveHealthSettings);
         });
@@ -2405,7 +2690,7 @@ ingredientsには調味料の具体的な量も含めてください（例：「
             loadIngredientsFromLocalStorage();
             loadHealthSettings();
             loadFavoritesFromLocalStorage();
-            loadTasteSettings(); // 🆕 味の濃さ設定読み込み
+            loadMainSettings();
             updateApiStatus();
             
             if (weekMenu.length === 0) {
