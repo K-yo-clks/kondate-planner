@@ -1435,9 +1435,9 @@
                     <div class="control-group">
                         <label>🍽️ 献立タイプ</label>
                         <div class="toggle-buttons">
-                            <button class="menu-type-btn active" onclick="setMenuType('定食')">定食スタイル<br><small>（主菜+副菜+汁物）</small></button>
-                            <button class="menu-type-btn" onclick="setMenuType('1品')">1品もの<br><small>（丼・麺類など）</small></button>
-                            <button class="menu-type-btn" onclick="setMenuType('おまかせ')">おまかせ</button>
+                            <button class="menu-type-btn active" data-type="定食" onclick="setMenuType('定食')" ${currentStapleFood === '麺類' ? 'disabled' : ''}>定食スタイル<br><small>（主菜+副菜+汁物）</small></button>
+                            <button class="menu-type-btn" data-type="1品" onclick="setMenuType('1品')">1品もの<br><small>（丼・麺類など）</small></button>
+                            <button class="menu-type-btn" data-type="おまかせ" onclick="setMenuType('おまかせ')">おまかせ</button>
                         </div>
                     </div>
                 </div>
@@ -1753,6 +1753,19 @@
             });
             event.target.classList.add('active');
             saveMainSettings();
+            
+            // 麺類が選択された場合、献立タイプを1品ものに限定する
+            const menuTypeButtons = document.querySelectorAll('.menu-type-btn');
+            menuTypeButtons.forEach(btn => {
+                if (food === '麺類') {
+                    btn.disabled = btn.dataset.type === '定食';
+                    if (btn.dataset.type === '定食') {
+                        btn.classList.remove('active');
+                    }
+                } else {
+                    btn.disabled = false;
+                }
+            });
         }
 
         function saveMainSettings() {
@@ -2074,9 +2087,12 @@
                     </div>
                 `;
             } else {
+                const isMenrui = menu.stapleFood === '麺類';
+                const hasSoup = menu.soup && !isMenrui;
+                
                 dishesContainer.innerHTML = `
                     <div class="meal-detail-card">
-                        <h3 style="color: #a8b3ff; margin-bottom: 10px;">🍖 主菜: ${menu.main.name}</h3>
+                        <h3 style="color: #a8b3ff; margin-bottom: 10px;">${isMenrui ? '🍜 麺料理（主菜）' : '🍖 主菜'}: ${menu.main.name}</h3>
                         <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.main.calories} kcal/人</span></p>
                         <h4 style="margin-top: 15px; margin-bottom: 5px; color: #b8bec5;">材料：</h4>
                         <ul class="recipe-ingredients">
@@ -2101,6 +2117,7 @@
                         </ol>
                     </div>
 
+                    ${hasSoup ? `
                     <div class="meal-detail-card">
                         <h3 style="color: #a8b3ff; margin-bottom: 10px;">🍵 汁物: ${menu.soup.name}</h3>
                         <p style="margin-bottom: 10px;"><span class="calorie-badge">${menu.soup.calories} kcal/人</span></p>
@@ -2113,6 +2130,7 @@
                             ${menu.soup.steps.map(step => `<li>${step}</li>`).join('')}
                         </ol>
                     </div>
+                    ` : ''}
                 `;
             }
 
@@ -2163,7 +2181,7 @@
                 if (menu.menuType === '1品') {
                     dishNames = menu.main.name;
                 } else {
-                    dishNames = `${menu.main.name} / ${menu.side.name} / ${menu.soup.name}`;
+                    dishNames = `${menu.main.name} / ${menu.side.name}${menu.soup && menu.stapleFood !== '麺類' ? ' / ' + menu.soup.name : ''}`;
                 }
                 
                 return `
@@ -2272,11 +2290,7 @@
                             parts: [{
                                 text: prompt
                             }]
-                        }],
-                        generationConfig: {
-                            temperature: 0.7,
-                            maxOutputTokens: 8192
-                        }
+                        }]
                     })
                 });
 
@@ -2356,9 +2370,16 @@
                 constraints += `\n【重要】以下の食材を優先的に使ってください: ${priorityIngredients.join('、')}`;
             }
 
+            // 麺類の場合の特別処理
+            const isMenrui = currentStapleFood === '麺類';
+            
             if (currentStapleFood && currentStapleFood !== 'おまかせ') {
                 if (currentMenuType === '定食') {
-                    constraints += `\n【重要】主食は「${currentStapleFood}」にしてください。献立には主食（${currentStapleFood}）+ 主菜 + 副菜 + 汁物の組み合わせで提案してください。`;
+                    if (isMenrui) {
+                        constraints += `\n【重要】主食は「${currentStapleFood}」にしてください。麺類は汁物を兼ねるため、献立は麺料理（主菜）+ 副菜の2品構成で提案してください。汁物は不要です。`;
+                    } else {
+                        constraints += `\n【重要】主食は「${currentStapleFood}」にしてください。献立には主食（${currentStapleFood}）+ 主菜 + 副菜 + 汁物の組み合わせで提案してください。`;
+                    }
                 } else if (currentMenuType === '1品') {
                     constraints += `\n【重要】主食は「${currentStapleFood}」にしてください。${currentStapleFood}を使った料理を提案してください。`;
                 }
@@ -2403,7 +2424,11 @@
             } else if (currentMenuType === '1品') {
                 menuTypeInstruction = '1品で完結する料理（丼、麺類、カレー、リゾット、パスタなど）';
             } else {
-                menuTypeInstruction = '主菜、副菜、汁物の3品構成';
+                if (isMenrui) {
+                    menuTypeInstruction = '麺料理（主菜）+ 副菜の2品構成';
+                } else {
+                    menuTypeInstruction = '主菜、副菜、汁物の3品構成';
+                }
             }
 
             if (currentMenuType === '1品' || currentMenuType === 'おまかせ') {
@@ -2493,7 +2518,83 @@ caloriesは1人分のカロリーを指定してください。
 ingredientsには調味料の具体的な量も含めてください。
 stepsは各手順を詳しく、初心者でもわかるように書いてください。`;
             } else {
-                return `${dayCount}日分の夕食献立を考えてください。主菜、副菜、汁物の3品構成です。各料理には詳細で具体的な作り方と栄養素バランスも含めてください。
+                // 定食スタイル（麺類の場合と通常の場合で分岐）
+                if (isMenrui) {
+                    return `${dayCount}日分の麺料理中心の献立を考えてください。麺料理 + 副菜の2品構成です。麺類は汁物を兼ねるため、汁物は不要です。各料理には詳細で具体的な作り方と栄養素バランスも含めてください。
+
+条件：
+- ${categoryText}
+- ${difficultyText}
+- ${servings}人分
+- 麺料理 + 副菜の2品構成
+${constraints}
+
+【重要：献立構成について】
+- mainフィールドには「麺料理」を入れてください（ラーメン、うどん、そば、パスタ、焼きそば、冷麺、フォー、パッタイなど）
+- sideフィールドには副菜を入れてください（餃子、春巻き、サラダ、和え物など）
+- soupフィールドは不要です（絶対に含めないでください）
+
+【麺料理の例】
+- 和食系：味噌ラーメン、醤油ラーメン、塩ラーメン、とんこつラーメン、担々麺、きつねうどん、天ぷらうどん、月見そば、ざるそば、冷やし中華、焼きそば
+- 洋食系：カルボナーラ、ミートソーススパゲティ、ペペロンチーノ、トマトパスタ、クリームパスタ、ナポリタン
+- 中華系：ジャージャー麺、刀削麺、汁なし担々麺、焼きビーフン
+- エスニック系：フォー、パッタイ、ミーゴレン、ラクサ
+
+【重要：作り方について】
+手順は初心者でも失敗なく作れるように、以下の点を詳しく書いてください：
+- 麺の茹で方（茹で時間、火加減）
+- スープや味付けの作り方
+- トッピングの準備方法
+- 具体的な火加減（強火、中火、弱火）と加熱時間
+- 食材の切り方や下ごしらえの方法
+- 調味料を入れるタイミング
+- 完成の目安（色や状態など）
+- 失敗しないためのコツやポイント
+
+各手順は1文ではなく、2〜3文で詳しく説明してください。
+
+以下のJSON形式で返してください（マークダウンのコードブロックは使わず、純粋なJSONのみ）：
+
+{
+  "menus": [
+    {
+      "dayNumber": 1,
+      "menuType": "定食",
+      "healthNote": "この献立の健康面でのポイント（簡潔に）",
+      "nutrition": {
+        "carbohydrate": 50,
+        "protein": 70,
+        "fat": 40,
+        "vitamin": 80,
+        "mineral": 60
+      },
+      "main": {
+        "name": "醤油ラーメン（麺料理名を必ず入れてください）",
+        "calories": 650,
+        "ingredients": ["中華麺 (2玉)", "豚肉 (100g)", "もやし (100g)", "長ねぎ (1/2本)", "醤油 大さじ3", "鶏がらスープの素 大さじ1", "水 800ml"],
+        "steps": ["大きめの鍋に水800mlを入れて強火にかけ、沸騰したら鶏がらスープの素を入れてスープを作る。中火にして醤油を加え、味を調える。", "別の鍋でたっぷりのお湯を沸かし、中華麺を袋の表示時間通り（約3分）茹でる。茹で上がったらザルにあげて水気を切る。", "フライパンに油を熱し、豚肉を中火で炒める。色が変わったらもやしと長ねぎを加えてさらに2分炒める。", "丼に茹でた麺を入れ、熱々のスープを注ぎ、炒めた具材をトッピングして完成。お好みでメンマやのりを添えても良い。"]
+      },
+      "side": {
+        "name": "餃子（副菜名を入れてください）",
+        "calories": 180,
+        "ingredients": ["餃子の皮 (10枚)", "豚ひき肉 (100g)", "キャベツ (100g)", "にんにく (1かけ)", "醤油 小さじ1", "ごま油 小さじ1"],
+        "steps": ["キャベツはみじん切りにして塩もみし、水気を絞る。にんにくはみじん切りにする。", "ボウルに豚ひき肉、キャベツ、にんにく、醤油、ごま油を入れてよく混ぜ合わせる。", "餃子の皮に具材を包む。皮の縁に水をつけてしっかり閉じると破れにくい。", "フライパンに油を熱し、餃子を並べて中火で焼く。焼き色がついたら水を加えて蓋をし、5分蒸し焼きにする。水気が飛んだら完成。"]
+      }
+    }
+  ]
+}
+
+【絶対に守ること】
+1. mainには必ず「麺料理」を入れてください
+2. soupフィールドは絶対に含めないでください
+3. mainとsideの2つだけを返してください
+4. nutritionの各値は0-100のスケールで、献立全体の栄養バランスを評価してください
+5. caloriesは1人分のカロリーを指定してください
+6. ingredientsには調味料の具体的な量も含めてください
+7. stepsは各手順を詳しく、初心者でもわかるように書いてください`;
+
+                } else {
+                    return `${dayCount}日分の夕食献立を考えてください。主菜、副菜、汁物の3品構成です。各料理には詳細で具体的な作り方と栄養素バランスも含めてください。
 
 条件：
 - ${categoryText}
@@ -2552,6 +2653,7 @@ nutritionの各値は0-100のスケールで、献立全体の栄養バランス
 caloriesは1人分のカロリーを指定してください。
 ingredientsには調味料の具体的な量も含めてください。
 stepsは各手順を詳しく、初心者でもわかるように書いてください。`;
+                }
             }
         }
 
@@ -2564,7 +2666,7 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
             const lastRequestTime = localStorage.getItem('lastRequestTime') || 0;
             const now = Date.now();
             const timeSinceLastRequest = now - lastRequestTime;
-            const MIN_INTERVAL = 3000;
+            const MIN_INTERVAL = 5000;
 
             if (timeSinceLastRequest < MIN_INTERVAL) {
                 const waitTime = MIN_INTERVAL - timeSinceLastRequest;
@@ -2604,12 +2706,19 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
                         menu.category = document.getElementById('category').value;
                         menu.healthGoal = document.getElementById('health-goal').value;
                         
+                        // カロリー計算（麺類の場合は汁物なし）
                         if (menu.menuType === '1品') {
                             menu.totalCalories = Math.round(menu.main.calories * menu.servings);
                         } else {
-                            menu.totalCalories = Math.round(
-                                (menu.main.calories + menu.side.calories + menu.soup.calories) * menu.servings
-                            );
+                            if (menu.stapleFood === '麺類' || !menu.soup) {
+                                menu.totalCalories = Math.round(
+                                    (menu.main.calories + menu.side.calories) * menu.servings
+                                );
+                            } else {
+                                menu.totalCalories = Math.round(
+                                    (menu.main.calories + menu.side.calories + menu.soup.calories) * menu.servings
+                                );
+                            }
                         }
                         
                         menu.aiGenerated = true;
@@ -2640,7 +2749,7 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
             const lastRequestTime = localStorage.getItem('lastRequestTime') || 0;
             const now = Date.now();
             const timeSinceLastRequest = now - lastRequestTime;
-            const MIN_INTERVAL = 3000;
+            const MIN_INTERVAL = 5000;
 
             if (timeSinceLastRequest < MIN_INTERVAL) {
                 const waitTime = MIN_INTERVAL - timeSinceLastRequest;
@@ -2673,13 +2782,20 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
                                 menu.menuType = currentMenuType === 'おまかせ' ? (menu.side ? '定食' : '1品') : currentMenuType;
                             }
                             
+                            // カロリー計算（麺類の場合は汁物なし）
                             let totalCalories;
                             if (menu.menuType === '1品') {
                                 totalCalories = Math.round(menu.main.calories * servings);
                             } else {
-                                totalCalories = Math.round(
-                                    (menu.main.calories + menu.side.calories + menu.soup.calories) * servings
-                                );
+                                if (currentStapleFood === '麺類' || !menu.soup) {
+                                    totalCalories = Math.round(
+                                        (menu.main.calories + menu.side.calories) * servings
+                                    );
+                                } else {
+                                    totalCalories = Math.round(
+                                        (menu.main.calories + menu.side.calories + menu.soup.calories) * servings
+                                    );
+                                }
                             }
                             
                             return {
@@ -2819,9 +2935,12 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
                         </div>
                     `;
                 } else {
+                    const isMenrui = day.stapleFood === '麺類';
+                    const hasSoup = day.soup && !isMenrui;
+                    
                     mealsHTML = `
                         <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].main, 'main', ${dayIndex})">
-                            <div class="meal-type">🍖 主菜</div>
+                            <div class="meal-type">${isMenrui ? '🍜 麺料理（主菜）' : '🍖 主菜'}</div>
                             <div class="meal-name">${day.main.name}</div>
                             <div class="meal-info">
                                 <span class="calorie-badge">${day.main.calories} kcal/人</span>
@@ -2841,6 +2960,7 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
                             <div class="click-hint">👆 クリックで作り方を表示</div>
                         </div>
                         
+                        ${hasSoup ? `
                         <div class="meal" onclick="showRecipeModal(weekMenu[${dayIndex}].soup, 'soup', ${dayIndex})">
                             <div class="meal-type">🍵 汁物</div>
                             <div class="meal-name">${day.soup.name}</div>
@@ -2849,6 +2969,7 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
                             </div>
                             <div class="click-hint">👆 クリックで作り方を表示</div>
                         </div>
+                        ` : ''}
                     `;
                 }
                 
@@ -3007,7 +3128,11 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
             selectedMenus.forEach(day => {
                 let allDayIngredients = [...day.main.ingredients];
                 if (day.menuType !== '1品') {
-                    allDayIngredients.push(...day.side.ingredients, ...day.soup.ingredients);
+                    allDayIngredients.push(...day.side.ingredients);
+                    // 麺類でない場合のみ汁物を追加
+                    if (day.soup && day.stapleFood !== '麺類') {
+                        allDayIngredients.push(...day.soup.ingredients);
+                    }
                 }
                 
                 allDayIngredients.forEach(item => {
@@ -3236,7 +3361,7 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
             loadFavoritesFromLocalStorage();
             loadMainSettings();
             updateApiStatus();
-            
+
             if (weekMenu.length === 0) {
                 renderCalendar();
             }
@@ -3244,7 +3369,7 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
             if (favorites.length === 0) {
                 renderFavorites();
             }
-            
+
             document.getElementById('shopping-list').innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">🛒</div>
@@ -3252,6 +3377,18 @@ stepsは各手順を詳しく、初心者でもわかるように書いてくだ
                     <p>献立を作成後、「買い物リスト」ボタンを押してください</p>
                 </div>
             `;
+
+            const menuTypeButtons = document.querySelectorAll('.menu-type-btn');
+            menuTypeButtons.forEach(btn => {
+                if (currentStapleFood === '麺類') {
+                    btn.disabled = btn.dataset.type === '定食';
+                    if (btn.dataset.type === '定食') {
+                        btn.classList.remove('active');
+                    }
+                } else {
+                    btn.disabled = false;
+                }
+            });
         };
     </script>
 </body>
