@@ -1897,12 +1897,70 @@ async function generateAIWeekMenu() {
 // ============================================================
 // 個別料理の選択切り替え
 // ============================================================
+// ============================================================
+// 個別料理の選択切り替え（★自動更新機能追加）
+// ============================================================
 function toggleDishSelection(dayIndex, dishType) {
     if (!weekMenu[dayIndex].selectedDishes) {
         weekMenu[dayIndex].selectedDishes = { main: false, side: false, soup: false };
     }
     weekMenu[dayIndex].selectedDishes[dishType] = !weekMenu[dayIndex].selectedDishes[dishType];
     saveToLocalStorage();
+    
+    // ★チェックボックス変更時に自動的に買い物リストを更新
+    autoUpdateShoppingList();
+}
+
+// ★自動買い物リスト更新（トースト非表示版）
+function autoUpdateShoppingList() {
+    if (weekMenu.length === 0) return;
+
+    const allIngredients = [];
+    let selectedCount = 0;
+
+    weekMenu.forEach(day => {
+        if (!day.selectedDishes) {
+            day.selectedDishes = { main: false, side: false, soup: false };
+        }
+        const isMenrui = day.stapleFood === '麺類';
+        const hasSoup = day.soup && !isMenrui && day.menuType !== '1品';
+
+        if (day.selectedDishes.main && day.main?.ingredients) {
+            allIngredients.push(...day.main.ingredients); selectedCount++;
+        }
+        if (day.menuType !== '1品') {
+            if (day.selectedDishes.side && day.side?.ingredients) {
+                allIngredients.push(...day.side.ingredients); selectedCount++;
+            }
+            if (hasSoup && day.selectedDishes.soup && day.soup?.ingredients) {
+                allIngredients.push(...day.soup.ingredients); selectedCount++;
+            }
+        }
+    });
+
+    // 選択が0個でも買い物リストを空にする（前回の内容を残さない）
+    const ingredients = {};
+    const seasoningItems = {};
+    
+    allIngredients.forEach(item => {
+        const isSeasoning = SEASONINGS_LIST.some(s => item.includes(s));
+        const target = isSeasoning ? seasoningItems : ingredients;
+        target[item] = (target[item] || 0) + 1;
+    });
+
+    const newIngredients = {};
+    const newSeasonings = {};
+    Object.entries(ingredients).forEach(([item, count]) => {
+        newIngredients[item] = { count, checked: shoppingListData.ingredients?.[item]?.checked || false };
+    });
+    Object.entries(seasoningItems).forEach(([item, count]) => {
+        newSeasonings[item] = { count, checked: shoppingListData.seasonings?.[item]?.checked || false };
+    });
+
+    shoppingListData = { ingredients: newIngredients, seasonings: newSeasonings, selectedCount };
+    
+    saveShoppingListToLocalStorage();
+    renderShoppingList();
 }
 
 // ============================================================
@@ -2080,56 +2138,21 @@ function renderCalendar() {
 function generateShoppingList() {
     if (weekMenu.length === 0) { showToast('⚠️ 先に献立を作成してください', 'error'); return; }
 
-    const allIngredients = [];
-    let selectedCount = 0;
+    // 選択チェック
+    const hasSelected = weekMenu.some(day => 
+        day.selectedDishes && (day.selectedDishes.main || day.selectedDishes.side || day.selectedDishes.soup)
+    );
 
-    weekMenu.forEach(day => {
-        if (!day.selectedDishes) {
-            day.selectedDishes = { main: false, side: false, soup: false };
-        }
-        const isMenrui = day.stapleFood === '麺類';
-        const hasSoup = day.soup && !isMenrui && day.menuType !== '1品';
+    if (!hasSelected) { 
+        showToast('⚠️ 料理が何も選択されていません', 'error'); 
+        return; 
+    }
 
-        if (day.selectedDishes.main && day.main?.ingredients) {
-            allIngredients.push(...day.main.ingredients); selectedCount++;
-        }
-        if (day.menuType !== '1品') {
-            if (day.selectedDishes.side && day.side?.ingredients) {
-                allIngredients.push(...day.side.ingredients); selectedCount++;
-            }
-            if (hasSoup && day.selectedDishes.soup && day.soup?.ingredients) {
-                allIngredients.push(...day.soup.ingredients); selectedCount++;
-            }
-        }
-    });
+    // 実際の更新は autoUpdateShoppingList() に任せる
+    autoUpdateShoppingList();
 
-    if (selectedCount === 0) { showToast('⚠️ 料理が何も選択されていません', 'error'); return; }
-
-    const ingredients = {};
-    const seasoningItems = {};
-    allIngredients.forEach(item => {
-        const isSeasoning = SEASONINGS_LIST.some(s => item.includes(s));
-        const target = isSeasoning ? seasoningItems : ingredients;
-        target[item] = (target[item] || 0) + 1;
-    });
-
-    const newIngredients = {};
-    const newSeasonings = {};
-    Object.entries(ingredients).forEach(([item, count]) => {
-        newIngredients[item] = { count, checked: shoppingListData.ingredients?.[item]?.checked || false };
-    });
-    Object.entries(seasoningItems).forEach(([item, count]) => {
-        newSeasonings[item] = { count, checked: shoppingListData.seasonings?.[item]?.checked || false };
-    });
-
-    shoppingListData = { ingredients: newIngredients, seasonings: newSeasonings, selectedCount };
+    showToast(`🛒 ${shoppingListData.selectedCount}品の食材リストを更新しました！`);
     
-    // ★localStorage保存
-    saveShoppingListToLocalStorage();
-    
-    renderShoppingList();
-
-    showToast(`🛒 ${selectedCount}品の食材リストを更新しました！`);
     const section = document.getElementById('shopping-list-section');
     section.classList.remove('highlight-pulse');
     void section.offsetWidth;
