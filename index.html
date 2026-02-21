@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { overflow-x: hidden; max-width: 100%; }
+        html { overflow-x: hidden; max-width: 100%; scroll-behavior: smooth; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
@@ -161,22 +161,39 @@
         .btn-clear { background: linear-gradient(135deg, rgba(245,101,101,0.3) 0%, rgba(220,38,38,0.3) 100%); color: white; border: 1px solid rgba(245,101,101,0.5); }
         .btn-clear:hover:not(:disabled) { background: linear-gradient(135deg, rgba(245,101,101,0.5) 0%, rgba(220,38,38,0.5) 100%); transform: translateY(-2px); }
         .main-content { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 25px; }
-        @media (max-width: 1024px) { .main-content { grid-template-columns: 1fr 1fr; } .favorites-section { grid-column: 1 / -1; } }
+        @media (max-width: 1024px) { 
+            .main-content { grid-template-columns: 1fr 1fr; } 
+            .favorites-section { grid-column: 1 / -1; } 
+        }
         @media (max-width: 768px) {
-            body { padding: 10px; } h1 { font-size: 1.8em; }
+            body { padding: 10px; padding-bottom: 80px; }
+            h1 { font-size: 1.8em; }
             .main-content { grid-template-columns: 1fr; }
             .controls { padding: 15px; }
-            .calendar-section, .shopping-list-section, .favorites-section { padding: 15px; }
+            .calendar-section, .shopping-list-section, .favorites-section { 
+                padding: 15px; 
+                margin-left: auto;
+                margin-right: auto;
+                max-width: 100%;
+            }
             .control-group { min-width: 100%; }
             .action-buttons { grid-template-columns: 1fr 1fr; }
             .toggle-btn, .taste-toggle-btn, .menu-type-btn { font-size: 12px; padding: 10px 6px; }
             .accordion-body { padding: 15px; }
         }
         @media (max-width: 480px) {
-            body { padding: 8px; } h1 { font-size: 1.5em; } h2 { font-size: 1.2em; }
+            body { padding: 8px; padding-bottom: 80px; }
+            h1 { font-size: 1.5em; }
+            h2 { font-size: 1.2em; }
             .controls { padding: 12px; }
             .action-buttons { grid-template-columns: 1fr 1fr; gap: 8px; }
             .action-buttons button { font-size: 12px; padding: 12px 8px; }
+            .calendar-section, .shopping-list-section, .favorites-section { 
+                padding: 12px; 
+                margin-left: auto;
+                margin-right: auto;
+                width: 100%;
+            }
         }
         .calendar-section, .shopping-list-section, .favorites-section {
             background: rgba(255,255,255,0.05); backdrop-filter: blur(20px);
@@ -198,7 +215,7 @@
         .shopping-list-section h3 { color: #a8b3ff; font-size: 1.15em; margin-bottom: 12px; margin-top: 24px; display: flex; align-items: center; gap: 10px; font-weight: 600; }
         .shopping-list-section h3.seasoning-header { color: #ffb366; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); }
         .toast-notification {
-            position: fixed; bottom: 30px; left: 50%;
+            position: fixed; bottom: 90px; left: 50%;
             transform: translateX(-50%) translateY(120px);
             background: linear-gradient(135deg, rgba(72,187,120,0.95), rgba(56,161,105,0.95));
             color: white; padding: 16px 28px; border-radius: 14px;
@@ -412,6 +429,62 @@
             color: #b8bec5;
             line-height: 1.5;
         }
+
+        /* ========== スマホ用固定タブナビゲーション ========== */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(180deg, rgba(15,32,39,0.95) 0%, rgba(15,32,39,0.98) 100%);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(102,126,234,0.3);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+            padding: 8px 0;
+        }
+        .mobile-nav-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .mobile-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            color: #9ca3af;
+        }
+        .mobile-nav-item:active {
+            transform: scale(0.95);
+        }
+        .mobile-nav-item.active {
+            color: #a8b3ff;
+            background: rgba(102,126,234,0.15);
+        }
+        .mobile-nav-icon {
+            font-size: 1.5em;
+        }
+        .mobile-nav-label {
+            font-size: 0.7em;
+            font-weight: 600;
+        }
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: block;
+            }
+            .calendar-section, .shopping-list-section, .favorites-section {
+                scroll-margin-top: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -580,7 +653,7 @@
     </div>
 
     <div class="main-content">
-        <div class="calendar-section">
+        <div class="calendar-section" id="calendar-section">
             <h2>📅 週間献立カレンダー</h2>
             <div id="calendar"></div>
         </div>
@@ -588,7 +661,7 @@
             <h2>🛒 買い物リスト</h2>
             <div id="shopping-list"></div>
         </div>
-        <div class="favorites-section">
+        <div class="favorites-section" id="favorites-section">
             <h2>⭐ お気に入り料理</h2>
             <div class="favorite-filters">
                 <label class="favorite-filter-label">🏷️ フィルター</label>
@@ -620,6 +693,24 @@
                 </select>
             </div>
             <div id="favorites-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- スマホ用固定タブナビゲーション -->
+<div class="mobile-nav">
+    <div class="mobile-nav-container">
+        <div class="mobile-nav-item active" onclick="scrollToSection('calendar-section')">
+            <div class="mobile-nav-icon">📅</div>
+            <div class="mobile-nav-label">献立</div>
+        </div>
+        <div class="mobile-nav-item" onclick="scrollToSection('shopping-list-section')">
+            <div class="mobile-nav-icon">🛒</div>
+            <div class="mobile-nav-label">買い物</div>
+        </div>
+        <div class="mobile-nav-item" onclick="scrollToSection('favorites-section')">
+            <div class="mobile-nav-icon">⭐</div>
+            <div class="mobile-nav-label">お気に入り</div>
         </div>
     </div>
 </div>
@@ -714,6 +805,45 @@ const SEASONINGS_LIST = [
     'わさび','からし','豆板醤','甜麺醤','オイスターソース',
     '鶏がらスープの素','だしの素','本だし','めんつゆ','白だし','水'
 ];
+
+// ============================================================
+// スマホ用タブナビゲーション
+// ============================================================
+function scrollToSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // タブのアクティブ状態を更新
+        document.querySelectorAll('.mobile-nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+    }
+}
+
+// スクロール位置に応じてタブのアクティブ状態を更新
+let scrollTimeout;
+window.addEventListener('scroll', () => {
+    if (window.innerWidth > 768) return;
+    
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+        const sections = ['calendar-section', 'shopping-list-section', 'favorites-section'];
+        const scrollPos = window.scrollY + 150;
+        
+        for (let i = sections.length - 1; i >= 0; i--) {
+            const section = document.getElementById(sections[i]);
+            if (section && section.offsetTop <= scrollPos) {
+                document.querySelectorAll('.mobile-nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                document.querySelectorAll('.mobile-nav-item')[i].classList.add('active');
+                break;
+            }
+        }
+    }, 100);
+});
 
 // ============================================================
 // トースト通知
@@ -1103,7 +1233,7 @@ function renderFavorites() {
 }
 
 // ============================================================
-// ★★★ 最初の書き方に戻したGemini API呼び出し ★★★
+// Gemini API呼び出し
 // ============================================================
 async function callGemini(prompt, retryCount = 0) {
     if (!apiKey) {
@@ -1385,7 +1515,7 @@ function hideLoadingOverlay() {
 }
 
 // ============================================================
-// 献立生成（最初の書き方のレート制限を復元）
+// 献立生成
 // ============================================================
 function parseMenuResponse(response) {
     let jsonText = response;
@@ -1427,7 +1557,7 @@ function enrichMenu(menu, index) {
         totalCalories,
         aiGenerated: true,
         selected: true,
-        selectedDishes: { main: true, side: true, soup: true }
+        selectedDishes: { main: false, side: false, soup: false }  // ★デフォルトをfalseに変更
     };
 }
 
@@ -1438,7 +1568,6 @@ async function generateAIDayMenu() {
     btn.innerHTML = '<span class="loading"></span> AI思考中...';
     btn.disabled = true;
 
-    // ローディングUI表示
     showLoadingOverlay(1);
 
     const lastRequestTime = localStorage.getItem('lastRequestTime') || 0;
@@ -1464,7 +1593,6 @@ async function generateAIDayMenu() {
                 weekMenu.push(menu);
                 saveToLocalStorage();
                 
-                // 非同期でレンダリング
                 setTimeout(() => {
                     renderCalendar();
                     hideLoadingOverlay();
@@ -1493,7 +1621,6 @@ async function generateAIWeekMenu() {
     btn.innerHTML = '<span class="loading"></span> AI思考中...';
     btn.disabled = true;
 
-    // ローディングUI表示
     showLoadingOverlay(7);
 
     const lastRequestTime = localStorage.getItem('lastRequestTime') || 0;
@@ -1516,7 +1643,6 @@ async function generateAIWeekMenu() {
                 weekMenu = data.menus.map((menu, i) => enrichMenu(menu, i));
                 saveToLocalStorage();
                 
-                // 非同期でレンダリング
                 setTimeout(() => {
                     renderCalendar();
                     hideLoadingOverlay();
@@ -1543,7 +1669,7 @@ async function generateAIWeekMenu() {
 // ============================================================
 function toggleDishSelection(dayIndex, dishType) {
     if (!weekMenu[dayIndex].selectedDishes) {
-        weekMenu[dayIndex].selectedDishes = { main: true, side: true, soup: true };
+        weekMenu[dayIndex].selectedDishes = { main: false, side: false, soup: false };
     }
     weekMenu[dayIndex].selectedDishes[dishType] = !weekMenu[dayIndex].selectedDishes[dishType];
     saveToLocalStorage();
@@ -1608,7 +1734,7 @@ function renderCalendar() {
 
     calendar.innerHTML = weekMenu.map((day, dayIndex) => {
         if (!day.selectedDishes) {
-            day.selectedDishes = { main: day.selected !== false, side: day.selected !== false, soup: day.selected !== false };
+            day.selectedDishes = { main: false, side: false, soup: false };  // ★デフォルトをfalseに変更
         }
         const cpp = Math.round(day.totalCalories / day.servings);
         const isMenrui = day.stapleFood === '麺類';
@@ -1729,7 +1855,7 @@ function generateShoppingList() {
 
     weekMenu.forEach(day => {
         if (!day.selectedDishes) {
-            day.selectedDishes = { main: day.selected !== false, side: day.selected !== false, soup: day.selected !== false };
+            day.selectedDishes = { main: false, side: false, soup: false };
         }
         const isMenrui = day.stapleFood === '麺類';
         const hasSoup = day.soup && !isMenrui && day.menuType !== '1品';
@@ -1784,7 +1910,7 @@ function generateShoppingList() {
 function renderShoppingList() {
     const div = document.getElementById('shopping-list');
     if (!shoppingListData.selectedCount) {
-        div.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🛒</div><p>買い物リストは空です</p></div>`;
+        div.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🛒</div><p>買い物リストは空です</p><p style="font-size:0.9em;">各料理の🛒チェックを入れて「買い物リスト」ボタンを押してください</p></div>`;
         return;
     }
     let html = `<p style="margin-bottom:14px;color:#9ca3af;font-size:13px;">選択中: ${shoppingListData.selectedCount}品分</p>`;
@@ -1851,7 +1977,7 @@ function loadFromLocalStorage() {
         weekMenu = JSON.parse(saved);
         weekMenu.forEach(menu => {
             if (!menu.selectedDishes) {
-                menu.selectedDishes = { main: menu.selected !== false, side: menu.selected !== false, soup: menu.selected !== false };
+                menu.selectedDishes = { main: false, side: false, soup: false };
             }
         });
         renderCalendar();
